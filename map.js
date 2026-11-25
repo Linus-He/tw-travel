@@ -42,13 +42,34 @@ window.TravelMap = (() => {
       const x = (place.lng + 180) / 360 * scale;
       const y = (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale;
       const key = `${Math.floor(x / 64)}:${Math.floor(y / 64)}`;
-      if (!cells.has(key)) cells.set(key, []);
-      cells.get(key).push(place);
+      if (!cells.has(key)) cells.set(key, { places: [], x: 0, y: 0 });
+      const cell = cells.get(key);
+      cell.places.push(place); cell.x += x; cell.y += y;
     });
-    return Array.from(cells.values(), places => ({
-      places,
-      lat: places.reduce((sum, place) => sum + place.lat, 0) / places.length,
-      lng: places.reduce((sum, place) => sum + place.lng, 0) / places.length,
+    const groups = Array.from(cells.values(), cell => ({
+      places: cell.places, x: cell.x / cell.places.length, y: cell.y / cell.places.length,
+    }));
+    // A grid edge must not leave overlapping circles. Recheck after each merge,
+    // because the weighted center can now approach another neighboring group.
+    let merged = true;
+    while (merged) {
+      merged = false;
+      for (let i = 0; i < groups.length && !merged; i += 1) {
+        for (let j = i + 1; j < groups.length; j += 1) {
+          const a = groups[i], b = groups[j], dx = a.x - b.x, dy = a.y - b.y;
+          if (dx * dx + dy * dy >= 52 * 52) continue;
+          const total = a.places.length + b.places.length;
+          a.x = (a.x * a.places.length + b.x * b.places.length) / total;
+          a.y = (a.y * a.places.length + b.y * b.places.length) / total;
+          a.places.push(...b.places);
+          groups.splice(j, 1); merged = true; break;
+        }
+      }
+    }
+    return groups.map(group => ({
+      places: group.places,
+      lat: Math.atan(Math.sinh(Math.PI * (1 - 2 * group.y / scale))) * 180 / Math.PI,
+      lng: group.x / scale * 360 - 180,
     }));
   }
   function moveTo(center, zoom) {
@@ -66,7 +87,8 @@ window.TravelMap = (() => {
       const clustered = group.places.length > 1;
       const place = group.places[0];
       const title = clustered ? `${group.places.length} 个地点，点击放大查看` : place.name;
-      const label = clustered ? String(group.places.length) : place.type === '美食' ? '食' : place.type === '咖啡馆' ? '咖' : '✦';
+      const markerIcons = {'美食':'utensils','咖啡馆':'coffee','景点':'landmark','自然':'trees','散步':'footprints'};
+      const label = clustered ? String(group.places.length) : window.TravelUI?.icon(markerIcons[place.type] || 'map-pin') || '·';
       const select = () => {
         if (clustered) moveTo([group.lat, group.lng], Math.min(16, zoom + 2));
         else if (typeof onSelect === 'function') onSelect(place.id);
@@ -74,7 +96,7 @@ window.TravelMap = (() => {
       if (provider === 'google') {
         const pin = document.createElement('span');
         pin.className = `google-pin${clustered ? ' cluster-pin' : ''}`;
-        pin.textContent = label;
+        pin.innerHTML = label;
         const marker = new google.maps.marker.AdvancedMarkerElement({
           map, position: { lat: group.lat, lng: group.lng }, title, content: pin,
         });
@@ -86,6 +108,7 @@ window.TravelMap = (() => {
         icon: L.divIcon({ className: `pin${clustered ? ' cluster-pin' : ''}`, html: label, iconSize: clustered ? [42, 42] : [32, 32] }),
       }).addTo(map).bindTooltip(title).on('click', select);
     });
+    window.TravelUI?.refreshIcons();
   }
   function setPlaces(rows, select) {
     pendingRows = (Array.isArray(rows) ? rows : []).filter(place =>
@@ -132,6 +155,12 @@ window.TravelMap = (() => {
   function mapReady(eventName) {
     if (provider === 'google') map.addListener(eventName, notifyViewport);
     else map.on(eventName, notifyViewport);
+    if (typeof window.addEventListener === 'function') {
+      window.addEventListener('resize', () => {
+        if (failed) return;
+        if (provider === 'osm') map.invalidateSize?.({animate: false});
+      });
+    }
     renderMarkers();
     if (pendingView) applyView();
     if (provider !== 'google') notifyViewport();

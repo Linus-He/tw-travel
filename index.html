@@ -1,34 +1,46 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="从真实台湾地图出发，探索台北、台南的景点与美食。查看官方地点资料，收藏旅行灵感，编写自己的攻略。">
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="从真实台湾地图出发，探索台北、台南的景点与美食。收藏地点，编写属于自己的旅行笔记。">
   <title>岛屿漫游 · 台湾旅行地图</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 40 40%27%3E%3Cpath fill=%27%23376952%27 d=%27M20 2 38 20 20 38 2 20Z%27/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 40 40%27%3E%3Cpath fill=%27%23171717%27 d=%27M20 2 38 20 20 38 2 20Z%27/%3E%3C/svg%3E">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <header><a class="brand" href="./"><span>◈</span> 岛屿漫游 <small>TAIWAN, AT YOUR PACE</small></a><nav aria-label="主导航"><button class="active" id="explore" aria-pressed="true">探索地图</button><button id="saved" aria-pressed="false">我的收藏</button><button id="write">＋ 编写攻略</button></nav></header>
+<body data-mobile-view="map">
+  <header class="app-header">
+    <a class="brand" href="./"><i data-lucide="compass" aria-hidden="true"></i><span>岛屿漫游</span><small>台湾旅行地图</small></a>
+    <nav id="main-tabs" class="glass-tabs" aria-label="主导航" data-view="explore" data-active="explore">
+      <span class="tab-lens" aria-hidden="true"></span>
+      <button class="active" id="explore" aria-pressed="true"><i data-lucide="map" aria-hidden="true"></i><span>探索</span></button>
+      <button id="saved" aria-pressed="false"><i data-lucide="bookmark" aria-hidden="true"></i><span>收藏</span></button>
+      <button id="write" aria-pressed="false" aria-haspopup="dialog" aria-controls="editor"><i data-lucide="square-pen" aria-hidden="true"></i><span>笔记</span></button>
+    </nav>
+    <button class="icon-button header-tools" id="backup-open" aria-label="笔记备份与导入" aria-haspopup="dialog" aria-controls="backup-dialog" title="笔记备份"><i data-lucide="ellipsis" aria-hidden="true"></i></button>
+  </header>
   <main>
     <aside aria-label="地点探索">
-      <div class="eyebrow">SMALL STREETS. REAL DISCOVERIES.</div><h1>从地图出发，<br>走进岛屿日常<span>。</span></h1>
-      <p class="intro">台北的街角，台南的巷弄。慢慢找，慢慢逛。</p>
-      <div class="cities" role="group" aria-label="选择城市"><button data-city="全部" aria-pressed="true">双城探索</button><button data-city="台北" aria-pressed="false">台北</button><button data-city="台南" aria-pressed="false">台南</button></div>
-      <label class="search"><span aria-hidden="true">⌕</span><input id="search" placeholder="搜索店名、街道或区域…" aria-label="搜索地点"><button id="clear-search" type="button" aria-label="清除搜索" hidden>×</button></label>
-      <div class="filters" id="filters" role="group" aria-label="地点分类"></div>
-      <div id="scope" class="scope" hidden><span id="scope-text">当前地图区域</span><button id="clear-area">清除范围 ×</button></div>
-      <div class="list-heading"><h2 id="listTitle">地图上的好去处</h2><span id="count" role="status" aria-live="polite">正在加载…</span></div>
-      <p id="coverage" class="coverage"></p><div id="list" aria-busy="true"><p class="empty">正在加载真实地点资料…</p></div>
-      <button id="more" class="load-more" hidden>查看更多地点</button>
-      <footer><p id="data-summary">地点资料来自公开来源，覆盖持续补充。</p><button id="sources">资料来源与说明 ↗</button><p>笔记和评价仅保存在当前浏览器。</p><button id="export">导出我的旅行笔记 ↗</button><label class="import">导入笔记<input type="file" id="import" accept="application/json"></label><p id="legacy-notes" hidden></p></footer>
+      <div class="sidebar-controls">
+        <div class="sidebar-heading"><h1>探索台湾</h1><p>沿着地图，找到想去的地方。</p></div>
+        <label class="search"><i data-lucide="search" aria-hidden="true"></i><input id="search" placeholder="搜索地点、街道或区域" aria-label="搜索地点"><button id="clear-search" type="button" class="icon-button" aria-label="清除搜索" hidden><i data-lucide="x" aria-hidden="true"></i></button></label>
+        <div class="cities" role="group" aria-label="选择城市"><button data-city="全部" aria-pressed="true">全部城市</button><button data-city="台北" aria-pressed="false">台北</button><button data-city="台南" aria-pressed="false">台南</button></div>
+        <div class="filters" id="filters" role="group" aria-label="地点分类"></div>
+        <div id="scope" class="scope" hidden><span id="scope-text">当前地图区域</span><button id="clear-area">清除范围</button></div>
+        <div class="list-heading"><h2 id="listTitle">所有地点</h2><span id="count" role="status" aria-live="polite">加载中</span></div>
+        <p id="coverage" class="sr-only"></p>
+      </div>
+      <div class="results-scroll"><div id="list" aria-busy="true"><p class="empty">正在加载地点…</p></div><button id="more" class="load-more" hidden>查看更多地点</button></div>
+      <footer class="sidebar-footer"><span class="footer-status" aria-hidden="true"></span><p id="data-summary">官方开放资料选集</p><button id="sources" aria-haspopup="dialog" aria-controls="source-dialog" title="资料来源与说明" aria-label="资料来源与说明"><i data-lucide="info" aria-hidden="true"></i></button><p id="legacy-notes" hidden></p></footer>
     </aside>
-    <section class="map-wrap" aria-label="台湾旅行地图"><div id="map"></div><div class="map-label"><span class="live" aria-hidden="true"></span><span id="map-status" role="status">正在加载地图…</span><small>放大查看街道 · 点击聚合数字展开地点</small></div><button id="search-area" class="search-area" disabled>搜索此区域</button><div class="map-legend"><span>●</span> 已收录地点 <small>仅展示本站资料库</small></div></section>
+    <section class="map-wrap" aria-label="台湾旅行地图"><div id="map"></div><div class="map-label"><i data-lucide="layers-2" aria-hidden="true"></i><span id="map-status" role="status">正在加载地图…</span></div><button id="search-area" class="search-area" disabled>搜索此区域</button><div class="map-legend"><span aria-hidden="true"></span>已收录地点</div></section>
+    <button id="mobile-map-toggle" class="mobile-map-toggle" aria-pressed="false"><i data-lucide="list" aria-hidden="true"></i><span>查看列表</span></button>
   </main>
-  <dialog id="detail" aria-labelledby="detail-title"><button class="close" aria-label="关闭地点详情">×</button><div id="detailContent"></div></dialog>
-  <dialog id="editor" aria-labelledby="editor-title"><button class="close" aria-label="关闭攻略编辑">×</button><div class="eyebrow">YOUR ISLAND JOURNAL</div><h2 id="editor-title">写下你的岛屿记忆</h2><p class="dialog-note">保存到本机，记得导出备份。</p><form id="guideForm"><label>地点 / 攻略标题<input name="title" required maxlength="100" placeholder="例如：台南老街的一日散步"></label><label>城市<input name="city" required maxlength="50" placeholder="台南"></label><label>旅行笔记<textarea name="body" required maxlength="10000" rows="6" placeholder="路线、美食、花费，或值得记住的小事…"></textarea></label><label>来源链接（可选）<input name="url" type="url" placeholder="https://…"></label><button class="primary">保存到我的笔记</button><span id="guide-status" role="status"></span></form><div id="guides"></div></dialog>
-  <dialog id="source-dialog" aria-labelledby="source-title"><button class="close" aria-label="关闭资料说明">×</button><div class="eyebrow">OPEN DATA, CLEAR ORIGINS</div><h2 id="source-title">每个地点，都有出处</h2><div id="source-content"></div><p class="dialog-note">地点坐标和营业资料可能有变动，出发前请查阅来源或联系店家。本站没有导入 Google 或社交平台评分、评论；缺失资料会明确标注。分类由本站依据来源类型和名称整理。台北餐饮尚未收录，台北部分详细地址缺失。官方观光资料不是全量商家名录。</p><p><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">地图 © OpenStreetMap contributors · ODbL</a></p></dialog>
+  <dialog id="detail" class="detail-dialog" aria-labelledby="detail-title"><button class="close icon-button" aria-label="关闭地点详情"><i data-lucide="x" aria-hidden="true"></i></button><div id="detailContent"></div></dialog>
+  <dialog id="editor" aria-labelledby="editor-title"><button class="close icon-button" aria-label="关闭攻略编辑"><i data-lucide="x" aria-hidden="true"></i></button><div class="dialog-heading"><span class="dialog-icon"><i data-lucide="notebook-pen" aria-hidden="true"></i></span><h2 id="editor-title">我的旅行笔记</h2><p class="dialog-note">记下走过的地方，和下次想去的理由。</p></div><form id="guideForm"><label>标题<input name="title" required maxlength="100" placeholder="这次旅行，想记住什么？"></label><label>城市<input name="city" required maxlength="50" placeholder="例如：台南"></label><label>旅行笔记<textarea name="body" required maxlength="10000" rows="5" placeholder="路线、美食、花费，或路上的小发现…"></textarea></label><label>参考链接 <span class="optional">可选</span><input name="url" type="url" placeholder="https://…"></label><div class="form-actions"><span class="local-note"><i data-lucide="hard-drive" aria-hidden="true"></i>仅保存在此浏览器</span><button class="primary">保存笔记</button></div><p id="guide-status" role="status"></p></form><div id="guides"></div></dialog>
+  <dialog id="backup-dialog" aria-labelledby="backup-title"><button class="close icon-button" aria-label="关闭笔记备份"><i data-lucide="x" aria-hidden="true"></i></button><div class="dialog-heading"><span class="dialog-icon"><i data-lucide="archive" aria-hidden="true"></i></span><h2 id="backup-title">笔记备份</h2><p class="dialog-note">收藏、体验和笔记保存在当前浏览器。导出一份，换设备也能继续。</p></div><button id="export" class="backup-action"><i data-lucide="download" aria-hidden="true"></i><span><strong>导出旅行笔记</strong><small>保存为 JSON 备份文件</small></span><i data-lucide="arrow-up-right" aria-hidden="true"></i></button><label class="import"><span><i data-lucide="upload" aria-hidden="true"></i>导入备份</span><input type="file" id="import" accept="application/json"><small>导入会替换当前笔记，请先备份。</small></label></dialog>
+  <dialog id="source-dialog" aria-labelledby="source-title"><button class="close icon-button" aria-label="关闭资料说明"><i data-lucide="x" aria-hidden="true"></i></button><div class="dialog-heading"><span class="dialog-icon"><i data-lucide="database" aria-hidden="true"></i></span><h2 id="source-title">资料来源</h2><p class="dialog-note">200 个真实地点，每一条都有出处。</p></div><div id="source-content"></div><details class="disclosure"><summary>覆盖与使用说明<i data-lucide="chevron-down" aria-hidden="true"></i></summary><div class="disclosure-body"><p class="dialog-note">地点坐标和营业资料可能变动，出发前请查阅来源。未导入外部平台评分、评论及照片。分类由本站整理；台北餐饮尚未收录，部分详细地址缺失，官方观光资料不是全量商家名录。</p><p><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">地图 © OpenStreetMap contributors · ODbL</a></p></div></details></dialog>
   <div id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="config.js"></script><script src="places-model.js"></script><script src="map.js"></script><script src="app.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="config.js"></script><script src="lucide.min.js"></script><script src="ui.js"></script><script src="places-model.js"></script><script src="map.js"></script><script src="app.js"></script>
 </body>
 </html>

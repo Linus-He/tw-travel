@@ -19,47 +19,64 @@ function personalRating(place) {
   const rows = notes.reviews[place.id] || [];
   return rows.length ? `我的评分 ${(rows.reduce((sum, r) => sum + r.stars, 0) / rows.length).toFixed(1)} · ${rows.length} 次记录` : '暂无评分';
 }
-const symbols = {'美食':'食','咖啡馆':'啡','景点':'游','自然':'山','散步':'巷'};
+const placeIcons = {'美食':'utensils','咖啡馆':'coffee','景点':'landmark','自然':'trees','散步':'footprints'};
+const icon = name => window.TravelUI?.icon(name) || '';
+function refreshUI() {
+  window.TravelUI?.refreshIcons();
+  window.TravelUI?.syncNavigation();
+}
 function placeholder(place, detail = false) {
-  return detail ? `<div class="detail-placeholder"><span>${symbols[place.type] || '游'}</span><small>暂无可用实景照片</small></div>` : `<div class="thumb placeholder" aria-label="暂无实景照片"><span class="placeholder-symbol">${symbols[place.type] || '游'}</span><small>暂无照片</small></div>`;
+  return detail ? `<p class="detail-photo-note">${icon('image-off')}<span>暂无实景照片</span></p>` : '';
 }
 function imageMarkup(place, detail = false) {
-  // Images are only included when the importer recorded an official, licensed URL.
+  // Only display actual, attributed images; missing photos never get a fake thumbnail.
   const image = safeUrl(place.image);
   return image ? `<img class="${detail ? 'detail-image' : 'thumb'}" src="${esc(image)}" data-image-place="${esc(place.id)}" data-detail="${detail}" alt="${esc(place.name)} · 来源实景照片" loading="lazy" referrerpolicy="strict-origin-when-cross-origin">` : placeholder(place, detail);
 }
 function render() {
   $('#explore').classList.toggle('active', !onlySaved); $('#saved').classList.toggle('active', onlySaved);
   $('#explore').setAttribute('aria-pressed', String(!onlySaved)); $('#saved').setAttribute('aria-pressed', String(onlySaved));
+  const tabs = $('#main-tabs');
+  if (tabs) tabs.dataset.view = onlySaved ? 'saved' : 'explore';
   document.querySelectorAll('[data-city]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.city === city)));
   const base = filterPlaces(places, {...options(), category: '全部'});
   $('#filters').innerHTML = ['全部','美食','景点','自然','散步','咖啡馆'].map(type => {
     const total = type === '全部' ? base.length : base.filter(p => p.type === type).length;
-    return `<button data-category="${type}" class="${category === type ? 'selected' : ''}" aria-pressed="${category === type}" ${!total && category !== type && type !== '全部' ? 'disabled' : ''}>${type}${total ? ` ${total}` : ''}</button>`;
+    return `<button data-category="${type}" class="${category === type ? 'selected' : ''}" aria-pressed="${category === type}" ${!total && category !== type && type !== '全部' ? 'disabled' : ''}><span class="filter-label">${type}</span>${category === type && total ? `<span class="filter-count">${total}</span>` : ''}</button>`;
   }).join('');
   $('#scope').hidden = !area;
-  $('#scope-text').textContent = '已限定地图区域';
+  $('#scope-text').textContent = '当前地图区域';
   $('#clear-search').hidden = !$('#search').value;
-  $('#listTitle').textContent = onlySaved ? '我的岛屿收藏' : '地图上的好去处';
+  $('#listTitle').textContent = onlySaved ? '我的收藏' : '探索地点';
   $('#list').setAttribute('aria-busy', String(dataState === 'loading'));
   if (dataState !== 'ready') {
-    $('#count').textContent = dataState === 'loading' ? '正在加载…' : '资料暂不可用';
+    $('#count').textContent = dataState === 'loading' ? '加载中' : '暂不可用';
     $('#coverage').textContent = '';
-    $('#list').innerHTML = dataState === 'loading' ? '<p class="empty">正在加载真实地点资料…</p>' : '<div class="empty">地点资料未能加载，请检查网络后重试。<button id="retry-data">重新加载地点资料</button></div>';
-    $('#more').hidden = true; return;
+    $('#list').innerHTML = dataState === 'loading'
+      ? `<div class="empty"><span class="empty-icon">${icon('loader-circle')}</span><p>正在加载地点</p></div>`
+      : `<div class="empty"><span class="empty-icon">${icon('cloud-off')}</span><h3>暂时无法加载地点</h3><p>检查网络后再试一次。</p><button id="retry-data">重新加载</button></div>`;
+    $('#more').hidden = true; refreshUI(); return;
   }
   const rows = filterPlaces(places, options());
   $('#count').textContent = `${rows.length} 个地点`;
-  $('#coverage').textContent = `${city === '全部' ? '台北 · 台南' : city}官方资料选集 · 非全量商家名录${area ? ' · 当前地图区域' : ''}`;
-  $('#list').innerHTML = rows.slice(0, pageSize).map(p => `<article class="card">${imageMarkup(p)}<button class="place-open" data-place="${esc(p.id)}" aria-label="查看${esc(p.name)}详情"><h3>${esc(p.name)}</h3><span class="tag">${esc(p.city)} · ${esc(p.type)}</span><p>${esc(p.district || p.address || '地址待补充')}</p><span class="no-rating">${esc(personalRating(p))}</span><p class="source-caption">${esc(p.source.name)}</p></button><button class="heart" data-save="${esc(p.id)}" aria-pressed="${notes.saved.includes(p.id)}" aria-label="${notes.saved.includes(p.id) ? '取消收藏' : '收藏'}${esc(p.name)}">${notes.saved.includes(p.id) ? '♥' : '♡'}</button></article>`).join('') || `<div class="empty">${onlySaved ? '这个条件下还没有收藏，点地点旁的爱心保存。' : '没有符合条件的已收录地点，试试放大其他区域或清除筛选。'}<button id="reset-filters">清除筛选条件</button></div>`;
+  $('#coverage').textContent = `${city === '全部' ? '台北 · 台南' : city} · 官方资料选集${area ? ' · 区域内' : ''}`;
+  const hasSavedPlaces = places.some(place => notes.saved.includes(place.id));
+  $('#list').innerHTML = rows.slice(0, pageSize).map(p => {
+    const saved = notes.saved.includes(p.id);
+    const hasRating = Boolean(notes.reviews[p.id]?.length);
+    return `<article class="card${activeId === p.id ? ' is-selected' : ''}" data-card="${esc(p.id)}"><button class="place-open" data-place="${esc(p.id)}" aria-label="查看${esc(p.name)}详情" ${activeId === p.id ? 'aria-current="true"' : ''}><span class="place-icon">${icon(placeIcons[p.type] || 'map-pin')}</span><span class="place-copy"><h3>${esc(p.name)}</h3><span class="place-meta">${esc([p.city, p.district, p.type].filter(Boolean).join(' · '))}</span>${hasRating ? `<span class="rating">${esc(personalRating(p))}</span>` : ''}</span></button><button class="heart" data-save="${esc(p.id)}" aria-pressed="${saved}" aria-label="${saved ? '取消收藏' : '收藏'}${esc(p.name)}" title="${saved ? '取消收藏' : '收藏地点'}">${icon('bookmark')}</button></article>`;
+  }).join('') || (onlySaved && !hasSavedPlaces
+    ? `<div class="empty"><span class="empty-icon">${icon('bookmark')}</span><h3>收藏你的下一站</h3><p>点击地点旁的收藏按钮，留待出发时查看。</p><button id="browse-places">去探索地点</button></div>`
+    : `<div class="empty"><span class="empty-icon">${icon('search')}</span><h3>${onlySaved ? '没有符合条件的收藏' : '没有找到地点'}</h3><p>换个关键词，或试试其他地图区域。</p><button id="reset-filters">清除筛选</button></div>`);
   $('#more').hidden = rows.length <= pageSize;
   $('#more').textContent = `再看 ${Math.min(30, Math.max(0, rows.length - pageSize))} 个地点`;
-  // The map retains all matching locations while the list uses the last explicitly searched viewport.
+  // A moved map never silently changes the explicitly searched list area.
   TravelMap.setPlaces(filterPlaces(places, options(null)), openPlace);
-  $('#data-summary').textContent = `已收录 ${places.filter(p => p.city === '台北').length} 个台北地点、${places.filter(p => p.city === '台南').length} 个台南地点。`;
+  $('#data-summary').textContent = `台北 ${places.filter(p => p.city === '台北').length} · 台南 ${places.filter(p => p.city === '台南').length} · 官方开放资料`;
   const legacyCount = notes.saved.filter(id => typeof id === 'number').length + Object.keys(notes.reviews).filter(id => /^\d+$/.test(id)).length;
   $('#legacy-notes').hidden = !legacyCount;
-  $('#legacy-notes').textContent = '旧演示地点的收藏和评价已保留在导出备份中，不会关联到新的真实地点。';
+  $('#legacy-notes').textContent = '旧演示地点的收藏和评价仍在导出备份中，不会关联到真实地点。';
+  refreshUI();
 }
 function sourceLink(url, text) {
   const valid = safeUrl(url);
@@ -69,12 +86,45 @@ function displayDate(value) {
   const match = typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/);
   return match ? match[0] : '来源未提供';
 }
+function disclosure(title, body, open = false) {
+  return `<details class="disclosure"${open ? ' open' : ''}><summary><span>${esc(title)}</span>${icon('chevron-down')}</summary><div class="disclosure-body">${body}</div></details>`;
+}
+function sourceMarkup(source) {
+  return `<div class="source-block">${sourceLink(source.url, source.name)}<dl class="source-facts"><div><dt>来源更新</dt><dd>${esc(displayDate(source.updatedAt))}</dd></div><div><dt>收录日期</dt><dd>${esc(displayDate(source.retrievedAt))}</dd></div><div><dt>授权</dt><dd>${sourceLink(source.licenseUrl, source.license || '请见来源说明')}</dd></div></dl></div>`;
+}
+function updateSelection() {
+  document.querySelectorAll('[data-card]').forEach(card => {
+    const selected = card.dataset.card === activeId;
+    card.classList.toggle('is-selected', selected);
+    const button = card.querySelector('[data-place]');
+    if (selected) button.setAttribute('aria-current', 'true'); else button.removeAttribute('aria-current');
+  });
+}
+function toggleSaved(id) {
+  notes.saved = notes.saved.includes(id) ? notes.saved.filter(value => value !== id) : [...notes.saved, id];
+  persist(); render();
+}
 function openPlace(id, moveMap = true) {
   const p = places.find(place => place.id === id); if (!p) return;
   activeId = id;
+  updateSelection();
   if (moveMap) TravelMap.showPlace(p);
   const reviews = notes.reviews[id] || [];
-  $('#detailContent').innerHTML = `${imageMarkup(p, true)}<p class="eyebrow">${esc(p.city)} / ${esc(p.district || p.type)}</p><h2 id="detail-title">${esc(p.name)}</h2><p class="no-rating">${esc(personalRating(p))} · 仅为本机记录，不是平台口碑评分</p>${p.description ? `<h3>来源简介</h3><p>${esc(p.description)}</p>` : ''}<dl class="place-facts"><div><dt>地址</dt><dd>${esc(p.address || `${p.locationLabel || p.city} · 详细地址来源未提供`)}</dd></div><div><dt>营业时间</dt><dd>${esc(p.openingHours || '来源未提供，请出发前确认')}</dd></div><div><dt>联系电话</dt><dd>${esc(p.phone || '来源未提供')}</dd></div>${safeUrl(p.website) ? `<div><dt>相关网站</dt><dd>${sourceLink(p.website, '查看网站')}</dd></div>` : ''}</dl><div class="detail-links">${sourceLink(`https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=17/${p.lat}/${p.lng}`, '查看地图位置')}${sourceLink(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.name} ${p.address || p.city}`)}`, 'Google Maps 导航')}</div><div class="source-block"><strong>资料出处</strong><br>${sourceLink(p.source.url, p.source.name)}${(p.additionalSources || []).map(source => `<br>${sourceLink(source.url, source.name)}（坐标等基础资料）`).join('')}<br>来源更新时间：${esc(displayDate(p.source.updatedAt))}<br>收录日期：${esc(displayDate(p.source.retrievedAt))}<br>授权：${sourceLink(p.source.licenseUrl, p.source.license || '请见来源说明')}${p.image && p.imageSource ? `<br>图片出处：${sourceLink(p.imageSource, p.source.name)}` : ''}</div><h3>搜索相关讨论</h3><p class="dialog-note">以下为平台搜索入口，本站未收录这些平台的帖子或评论。</p><div class="detail-links">${[['Threads','https://www.threads.com/search?q='],['Dcard','https://www.dcard.tw/search?query='],['小红书','https://www.xiaohongshu.com/search_result?keyword=']].map(([label,url]) => sourceLink(url + encodeURIComponent(`${p.city} ${p.name}`), label)).join('')}</div><h3>我的体验记录</h3><p class="dialog-note">这份记录仅保存于当前浏览器。公开评价系统尚未上线。</p><div>${reviews.map(r => `<div class="review"><span class="rating">${'★'.repeat(r.stars)}${'☆'.repeat(5 - r.stars)}</span><p>${esc(r.text)}</p></div>`).join('') || '<p class="dialog-note">还没有记录，去过之后再写下真实体验吧。</p>'}</div><form id="reviewForm"><label>我的评分<select name="stars" aria-label="我的评分">${[5,4,3,2,1].map(n => `<option value="${n}">${n} 星</option>`).join('')}</select></label><label>体验<textarea name="text" required maxlength="2000" rows="3" placeholder="你尝过什么、逛过哪里，有哪些实用建议？"></textarea></label><button class="primary">保存体验</button><button type="button" id="guide-place">为这里写攻略</button></form>`;
+  const image = safeUrl(p.image) ? imageMarkup(p, true) : '';
+  const saved = notes.saved.includes(id);
+  const facts = `<dl class="place-facts"><div><dt>${icon('map-pin')}地址</dt><dd>${esc(p.address || `${p.locationLabel || p.city} · 详细地址未提供`)}</dd></div><div><dt>${icon('clock-3')}营业时间</dt><dd>${esc(p.openingHours || '来源未提供，出发前请确认')}</dd></div><div><dt>${icon('phone')}联系电话</dt><dd>${esc(p.phone || '来源未提供')}</dd></div>${safeUrl(p.website) ? `<div><dt>${icon('globe')}网站</dt><dd>${sourceLink(p.website, '相关网站')}</dd></div>` : ''}</dl>`;
+  const mapLinks = `<div class="detail-links">${sourceLink(`https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=17/${p.lat}/${p.lng}`, '地图位置')}${sourceLink(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.name} ${p.address || p.city}`)}`, 'Google Maps 导航')}</div>`;
+  const origin = `${sourceMarkup(p.source)}${(p.additionalSources || []).map(source => `<p class="dialog-note">坐标等基础资料的补充来源</p>${sourceMarkup(source)}`).join('')}${p.image && p.imageSource ? `<p class="dialog-note">图片出处：${sourceLink(p.imageSource, p.source.name)}</p>` : ''}<p class="dialog-note">官方资料选集不代表即时营业状态，出发前请核实。${safeUrl(p.image) ? '' : '此地点暂无可用实景照片。'}</p>`;
+  const discussions = `<p class="dialog-note">前往平台搜索原文。本站未导入这些平台的帖子或评论。</p><div class="detail-links">${[['Threads','https://www.threads.com/search?q='],['Dcard','https://www.dcard.tw/search?query='],['小红书','https://www.xiaohongshu.com/search_result?keyword=']].map(([label,url]) => sourceLink(url + encodeURIComponent(`${p.city} ${p.name}`), label)).join('')}</div>`;
+  const experience = `<p class="dialog-note">仅保存于当前浏览器，不会发布为公共评价。</p><div>${reviews.map(r => `<div class="review"><span class="rating">我的评分 ${r.stars} / 5</span><p>${esc(r.text)}</p></div>`).join('')}</div><form id="reviewForm"><label>我的评分<select name="stars" aria-label="我的评分">${[5,4,3,2,1].map(n => `<option value="${n}">${n} 星</option>`).join('')}</select></label><label>体验<textarea name="text" required maxlength="2000" rows="3" placeholder="去过之后，留下你的真实体验。"></textarea></label><button class="primary">保存体验</button></form>`;
+  $('#detailContent').innerHTML = `${image}<div class="detail-heading"><span class="place-icon">${icon(placeIcons[p.type] || 'map-pin')}</span><div><p class="detail-topline">${esc([p.city,p.district,p.type].filter(Boolean).join(' · '))}</p><h2 id="detail-title">${esc(p.name)}</h2></div></div><p class="detail-rating">${esc(personalRating(p))}${reviews.length ? ' · 仅为本机记录' : ''}</p><div class="detail-actions"><button class="secondary detail-save" id="detail-save" aria-pressed="${saved}">${icon('bookmark')}<span>${saved ? '已收藏' : '收藏地点'}</span></button><button class="secondary" type="button" id="guide-place">${icon('square-pen')}<span>写攻略</span></button></div>${facts}${mapLinks}${p.description ? disclosure('地点简介', `<p>${esc(p.description)}</p>`) : ''}${disclosure('资料来源与更新时间', origin)}${disclosure('搜索相关讨论', discussions)}${disclosure(`我的体验${reviews.length ? ` · ${reviews.length} 条记录` : ''}`, experience, Boolean(reviews.length))}`;
+  $('#detail-save').onclick = () => {
+    toggleSaved(id);
+    const isSaved = notes.saved.includes(id);
+    $('#detail-save').setAttribute('aria-pressed', String(isSaved));
+    $('#detail-save').innerHTML = `${icon('bookmark')}<span>${isSaved ? '已收藏' : '收藏地点'}</span>`;
+    refreshUI();
+  };
   $('#reviewForm').onsubmit = event => {
     event.preventDefault(); const form = new FormData(event.target); const text = String(form.get('text')).trim(); if (!text) return;
     (notes.reviews[id] ??= []).push({stars: Number(form.get('stars')), text});
@@ -84,12 +134,14 @@ function openPlace(id, moveMap = true) {
     $('#detail').close(); showEditor(); $('#guideForm').elements.title.value = `${p.name} · 旅行笔记`; $('#guideForm').elements.city.value = p.city; $('#guideForm').elements.url.value = p.source.url;
   };
   if (!$('#detail').open) $('#detail').showModal();
+  refreshUI();
 }
 function renderGuides() {
-  $('#guides').innerHTML = notes.guides.map((g, i) => `<article class="review"><h3>${esc(g.title)}</h3><small>${esc(g.city)}</small><p>${esc(g.body)}</p><div class="guide-actions">${safeUrl(g.url) ? sourceLink(g.url, '来源') : ''}<button data-edit-guide="${i}">编辑笔记</button></div></article>`).join('');
+  $('#guides').innerHTML = notes.guides.map((g, i) => `<article class="review guide-entry"><div class="guide-entry-heading"><h3>${esc(g.title)}</h3><button data-edit-guide="${i}" aria-label="编辑${esc(g.title)}">${icon('pencil')}<span>编辑</span></button></div><small>${esc(g.city)}</small><p>${esc(g.body)}</p>${safeUrl(g.url) ? `<div class="guide-actions">${sourceLink(g.url, '来源')}</div>` : ''}</article>`).join('');
+  refreshUI();
 }
 let editingGuide = null;
-function showEditor() { editingGuide = null; $('#guideForm').reset(); $('#guide-status').textContent = ''; renderGuides(); $('#editor').showModal(); }
+function showEditor() { editingGuide = null; $('#guideForm').reset(); $('#guide-status').textContent = ''; renderGuides(); $('#editor').showModal(); refreshUI(); }
 $('#guideForm').onsubmit = event => {
   event.preventDefault(); const guide = Object.fromEntries(new FormData(event.target));
   guide.title = guide.title.trim(); guide.body = guide.body.trim(); guide.city = guide.city.trim();
@@ -110,9 +162,10 @@ $('#search').oninput = () => { pageSize = 30; render(); };
 $('#clear-search').onclick = () => { $('#search').value = ''; pageSize = 30; render(); $('#search').focus(); };
 $('#list').onclick = event => {
   const save = event.target.closest('[data-save]');
-  if (save) { const id = save.dataset.save; notes.saved = notes.saved.includes(id) ? notes.saved.filter(value => value !== id) : [...notes.saved, id]; persist(); render(); return; }
+  if (save) { toggleSaved(save.dataset.save); return; }
   const button = event.target.closest('[data-place]'); if (button) openPlace(button.dataset.place);
   if (event.target.closest('#reset-filters')) resetFilters();
+  if (event.target.closest('#browse-places')) { onlySaved = false; resetFilters(); TravelMap.reset(); }
   if (event.target.closest('#retry-data')) loadPlaces();
 };
 $('#saved').onclick = () => { onlySaved = true; pageSize = 30; render(); };
@@ -146,7 +199,7 @@ $('#import').onchange = async event => {
 $('#sources').onclick = () => {
   const entries = Array.isArray(sources) ? sources : (sources?.sources || []);
   $('#source-content').innerHTML = entries.length ? entries.map(source => `<div class="source-item"><h3>${esc(source.name)}</h3><p>${sourceLink(source.url, '官方资料来源')}<br>授权：${sourceLink(source.licenseUrl, source.license || '请见来源网站')}<br>收录日期：${esc(displayDate(source.retrievedAt))}</p>${source.note ? `<p>${esc(source.note)}</p>` : ''}${source.attribution ? `<p class="dialog-note">${esc(source.attribution)}</p>` : ''}</div>`).join('') : '<p>各地点详情均列出官方来源、收录日期与原始更新时间。</p>';
-  $('#source-dialog').showModal();
+  $('#source-dialog').showModal(); refreshUI();
 };
 async function loadPlaces() {
   dataState = 'loading'; render();
