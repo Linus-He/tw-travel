@@ -18,23 +18,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - name: Prepare static website
+      - name: Verify map and place filters
+        run: node --test tests/*.test.cjs
+      - name: Package website
         env:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
           GOOGLE_MAPS_MAP_ID: ${{ vars.GOOGLE_MAPS_MAP_ID }}
-        run: |
-          mkdir public
-          cp index.html style.css app.js map.js public/
-          python3 - <<'PYTHON'
-          import json, os
-          from pathlib import Path
-          config = {
-              'googleMapsApiKey': os.environ.get('GOOGLE_MAPS_API_KEY', ''),
-              'googleMapsMapId': os.environ.get('GOOGLE_MAPS_MAP_ID', ''),
-          }
-          Path('public/config.js').write_text('window.TRAVEL_CONFIG = ' + json.dumps(config) + ';\n')
-          PYTHON
+        run: python3 build-site.py
+      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public
