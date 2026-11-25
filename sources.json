@@ -1,0 +1,92 @@
+{
+  "retrievedAt": "2026-11-25",
+  "formatVersion": 1,
+  "coverage": {
+    "total": 200,
+    "byCity": {
+      "台北": 80,
+      "台南": 120
+    },
+    "byType": {
+      "景点": 112,
+      "散步": 20,
+      "自然": 8,
+      "美食": 59,
+      "咖啡馆": 1
+    },
+    "eligibleSourceRecords": {
+      "臺北市-Attraction": 377,
+      "臺南市-Attraction": 541,
+      "臺南市-Restaurant": 588
+    }
+  },
+  "sources": [
+    {
+      "name": "交通部觀光署｜景點－觀光資訊資料庫",
+      "publisher": "交通部觀光署",
+      "url": "https://data.gov.tw/dataset/7777",
+      "downloadUrl": "https://media.taiwan.net.tw/XMLReleaseAll_public/v2.0/Zh_tw/Attraction-json.zip",
+      "license": "政府資料開放授權條款－第1版",
+      "licenseUrl": "https://data.gov.tw/license",
+      "id": "tourism-attractions",
+      "retrievedAt": "2026-11-25",
+      "datasetUpdatedAt": "2026-11-25T14:30:03+08:00",
+      "downloadSha256": "85c9ba0afa3548158f2b36e8ac61871f475a4072567e736a80fcbfac8b4dd58f",
+      "recordsUsed": 140,
+      "primaryRecordsUsed": 82,
+      "additionalRecordsUsed": 58,
+      "countingNote": "recordsUsed 含主來源及 additionalSources；同一地點可使用多個來源，各來源筆數不可相加作為地點總數。",
+      "note": "開放資料快照，非即時營業狀態；缺失資訊不補造，圖片未匯入。",
+      "attribution": "交通部觀光署 2026 交通部觀光署｜景點－觀光資訊資料庫；此開放資料依政府資料開放授權條款第1版釋出，遵守條款者得利用；授權條款：https://data.gov.tw/license"
+    },
+    {
+      "name": "交通部觀光署｜餐飲－觀光資訊資料庫",
+      "publisher": "交通部觀光署",
+      "url": "https://data.gov.tw/dataset/7779",
+      "downloadUrl": "https://media.taiwan.net.tw/XMLReleaseAll_public/v2.0/Zh_tw/Restaurant-json.zip",
+      "license": "政府資料開放授權條款－第1版",
+      "licenseUrl": "https://data.gov.tw/license",
+      "id": "tourism-restaurants",
+      "retrievedAt": "2026-11-25",
+      "datasetUpdatedAt": "2026-11-25T14:30:22+08:00",
+      "downloadSha256": "440eca772628c636e306a1dc49d6f22b12169d35ff5afbc3a26349d9516f9aae",
+      "recordsUsed": 60,
+      "primaryRecordsUsed": 60,
+      "additionalRecordsUsed": 0,
+      "countingNote": "recordsUsed 含主來源及 additionalSources；同一地點可使用多個來源，各來源筆數不可相加作為地點總數。",
+      "note": "開放資料快照，非即時營業狀態；缺失資訊不補造，圖片未匯入。",
+      "attribution": "交通部觀光署 2026 交通部觀光署｜餐飲－觀光資訊資料庫；此開放資料依政府資料開放授權條款第1版釋出，遵守條款者得利用；授權條款：https://data.gov.tw/license"
+    },
+    {
+      "name": "臺南市政府觀光旅遊局｜臺南景點",
+      "publisher": "臺南市政府觀光旅遊局",
+      "url": "https://data.gov.tw/dataset/6183",
+      "downloadUrl": "https://www.twtainan.net/data/attractions_zh-tw.json",
+      "policyUrl": "https://www.twtainan.net/zh-tw/openapipolicy/",
+      "license": "政府資料開放授權條款－第1版",
+      "licenseUrl": "https://data.gov.tw/license",
+      "id": "tainan-attractions",
+      "retrievedAt": "2026-11-25",
+      "datasetUpdatedAt": null,
+      "downloadSha256": "6a68c8ec02d781c5194461d8eb057561663b369b45326b9d5ab6669e0edfc125",
+      "recordsUsed": 58,
+      "primaryRecordsUsed": 58,
+      "additionalRecordsUsed": 0,
+      "countingNote": "recordsUsed 含主來源及 additionalSources；同一地點可使用多個來源，各來源筆數不可相加作為地點總數。",
+      "note": "開放資料快照，非即時營業狀態；缺失資訊不補造，圖片未匯入。",
+      "attribution": "臺南市政府觀光旅遊局 2026 臺南市政府觀光旅遊局｜臺南景點；此開放資料依政府資料開放授權條款第1版釋出，遵守條款者得利用；授權條款：https://data.gov.tw/license"
+    }
+  ],
+  "processingNotes": [
+    "首批限量收錄200筆：台北80景點、台南60景點與60餐飲；各群組依穩定來源ID排序並逐行政區輪選，非熱門榜或平台評分排名。",
+    "僅保留來源標示ServiceStatus=1且在城市寬範圍座標框內的資料；此欄位非即時營業狀態。",
+    "台南景點補充資料以本地ID及名稱完全相符後才合併；不做模糊合併。",
+    "每筆 source 與 additionalSources 分別列出來源紀錄ID、欄位與原始更新日期；台南補充資料不覆寫觀光署座標及電話的來源日期。",
+    "保留繁體來源專名、地址與營業時間原文；頁面城市分類採台北/台南，簡介移除HTML與多餘空白並截取最多150字。",
+    "本站分類按來源為景點/餐飲及名稱關鍵字整理，不代表來源平台分類。",
+    "台北詳細街道地址在此次全國資料中未提供，address保持空字串，locationLabel僅為官方城市與行政區。",
+    "沒有提供或無法確認的營業時間保留null；不推算今天是否營業。餐飲缺少台北資料，並不表示台北沒有餐飲店家。",
+    "評分與評論未導入；圖片一律null，不以示意照片冒充實地照片。",
+    "來源更新日期與本次取得日期分開記錄；政府開放資料不代表提供機關背書或即時查證。"
+  ]
+}
