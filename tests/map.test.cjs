@@ -94,6 +94,29 @@ test('close places cluster at island scale and separate at street zoom', async (
   newMarkers[1].click(); assert.equal(selected, 'taipei-2');
 });
 
+test('nearby points across a grid boundary merge without absorbing distant places', async () => {
+  const s = setup(); await s.api.init();
+  const scale = 256 * 2 ** 7;
+  const boundary = Math.floor((121.52 + 180) / 360 * scale / 64) * 64;
+  const atPixel = (id, x) => ({ ...rows[0], id, lng: x / scale * 360 - 180 });
+  let selected;
+  s.api.setPlaces([
+    atPixel('west', boundary - 2),
+    atPixel('east', boundary + 2),
+    atPixel('distant', boundary + 200),
+  ], id => selected = id);
+  assert.equal(s.created.length, 2);
+  assert.equal(s.created.find(marker => marker.options.icon.html === '2')?.title, '2 个地点，点击放大查看');
+  const distant = s.created.find(marker => marker.options.icon.html !== '2');
+  distant.click(); assert.equal(selected, 'distant');
+  const count = s.created.length;
+  s.map.zoom = 15; s.emit('moveend');
+  const expanded = s.created.slice(count);
+  assert.equal(expanded.length, 3);
+  expanded[0].click(); assert.equal(selected, 'west');
+  expanded[1].click(); assert.equal(selected, 'east');
+});
+
 test('viewport notifications return independent bounds snapshots and can unsubscribe', async () => {
   const s = setup(), bounds = [];
   assert.equal(s.api.getBounds(), null);
