@@ -18,8 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
       - name: Verify map and place filters
-        run: node --test tests/*.test.cjs
+        run: node --test tests/*.test.cjs community-worker/tests/*.test.mjs
       - name: Package website
         env:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
