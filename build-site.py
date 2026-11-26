@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 
 ROOT = Path(__file__).resolve().parent
-FILES = ['index.html', 'style.css', 'app.js', 'map.js', 'places-model.js', 'places.json', 'sources.json', 'ui.js', 'lucide.min.js', 'LUCIDE-LICENSE', 'community.js', 'community.css', 'social-embeds.js', 'social-posts.json']
+FILES = ['index.html', 'style.css', 'app.js', 'map.js', 'places-model.js', 'places.json', 'sources.json', 'ui.js', 'lucide.min.js', 'LUCIDE-LICENSE', 'community.js', 'community.css', 'social-embeds.js', 'social-posts.json', 'amap-lab.html', 'amap-lab.css', 'amap-lab.js']
 
 def main():
     parser = argparse.ArgumentParser()

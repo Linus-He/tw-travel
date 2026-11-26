@@ -62,3 +62,10 @@ python3 enrich-places.py --taipei-osm /tmp/tw-travel-enrichment/taipei-osm.json 
 [out:json][timeout:120];area["ISO3166-2"="TW-TPE"]["boundary"="administrative"]->.a;nwr["amenity"~"^(restaurant|cafe|fast_food|food_court)$"]["name"](area.a);out center tags;
 ```
 仅在更新快照时请求，不在用户移动地图时批量查询。每次扩充同时重生成 Worker 的允许地点表，再发布后端与前端。
+
+## 高德独立验证页
+`amap-lab.html` 是独立验证页面，直接加载高德 JS API 2.0 的底图热点、附近餐饮搜索与详情。它不读取本站 `places.json`，不写入社区数据库，也不保存输入的 Key、店家结果或安全密钥。未输入本人申请的 Key 时不会请求高德。
+
+开通步骤：在高德开放平台注册并完成个人开发者认证；应用管理 → 我的应用 → 创建应用 → 添加 Key，平台选 **Web端（JS API）**。将页面所在域名 `linus-he.github.io` 加入网站白名单，取得该 Key 对应的 securityJsCode，在验证页本地填写。若普通台湾图面不可用，再向高德确认是否需世界地图权限，不要仅凭底图可显示就认定搜索、详情和评分均可用。
+
+此页直接使用安全密钥仅供本人临时调试，正式部署接入必须按高德官方指南使用安全代理并限制来源、频率与调用额度。当前没有账号 Key，尚未完成台湾地区实际接口验证；页面中的自动化检查使用模拟返回，不代表实际覆盖或评分可用。连接及每次搜索/详情会消耗高德账号配额，自动搜索默认关闭。
