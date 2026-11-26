@@ -1,0 +1,17 @@
+{
+  "name": "tw-travel-community",
+  "account_id": "68a7da0ddcd75b5d5a49d85965b84d2e",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-26",
+  "workers_dev": true,
+  "observability": { "enabled": false },
+  "vars": { "ALLOWED_ORIGIN": "https://linus-he.github.io" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tw-travel-community",
+      "database_id": "cb391bf9-603d-4f04-86e6-f0e2aad31bbd",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
