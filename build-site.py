@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 
 ROOT = Path(__file__).resolve().parent
-FILES = ['index.html', 'style.css', 'app.js', 'map.js', 'places-model.js', 'places.json', 'sources.json', 'ui.js', 'lucide.min.js', 'LUCIDE-LICENSE']
+FILES = ['index.html', 'style.css', 'app.js', 'map.js', 'places-model.js', 'places.json', 'sources.json', 'ui.js', 'lucide.min.js', 'LUCIDE-LICENSE', 'community.js', 'community.css', 'social-embeds.js', 'social-posts.json']
 
 def main():
     parser = argparse.ArgumentParser()
@@ -27,6 +27,7 @@ def main():
     config = {
         'googleMapsApiKey': os.environ.get('GOOGLE_MAPS_API_KEY', ''),
         'googleMapsMapId': os.environ.get('GOOGLE_MAPS_MAP_ID', ''),
+        'communityApiUrl': os.environ.get('COMMUNITY_API_URL', 'https://tw-travel-community.square-hwh.workers.dev'),
     }
     (target / 'config.js').write_text('window.TRAVEL_CONFIG = ' + json.dumps(config) + ';\n')
     print('Packaged %s attributed places in %s' % (len(rows), target))

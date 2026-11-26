@@ -22,8 +22,10 @@
 - 120 条有详细地址，54 条有来源营业时间。没有实时营业状态，出发前请核实；个别来源更新时间较旧，不能把收录日当更新日。
 - 未导入任何平台评分、评论和照片；列表不显示虚构评分或照片占位。分类为本站依据名称与来源类型整理，不表示官方推荐。
 - 所有地点使用稳定官方 ID，旧版七个演示地点的 numeric 收藏/评价继续保存在导出备份中，不会混接到真实地点。
-- 收藏、体验、攻略仅存当前浏览器 localStorage，不是多人共享系统。支持备份导入导出和本地攻略编辑。
-- Threads、Dcard、小红书只提供关键词搜索入口，不代表本站已收录对应讨论。
+- 收藏、私人体验和私人笔记保存在当前浏览器，继续支持备份导入导出，不会自动上传。
+- 新增独立的公共评价与旅友笔记，由 Cloudflare Worker + D1 保存，可跨设备读取。访客使用昵称主动公开发表；编辑、删除和恢复权限保存在发布设备，清除浏览器数据后需联系运营者处理。昵称不等于已核验身份或到店证明。
+- 地点页支持 Threads、Facebook、Instagram 官方原帖嵌入，按需点击加载；内容由后台 `social-posts.json` 关联。当前只核实收录 1 条博物馆官方历史 Facebook 动态，0 条外部旅友评价，不代表三平台全网评论已接入。
+- 官方动态与旅友原帖分别标注，来源说明见 `SOCIAL-CURATION.md`。帖文可能删除、设为私密或限制嵌入，始终保留原文入口。
 
 ## 运行与验证
 运行 `python3 -m http.server 8000`，访问 http://localhost:8000。
@@ -32,11 +34,18 @@
 node --check app.js
 node --check map.js
 node --check ui.js
-node --test tests/*.test.cjs
+node --test tests/*.test.cjs community-worker/tests/*.test.mjs
 python3 build-site.py
 ```
 
 页面需联网加载 Leaflet、OSM 底图。地点数据来自随站发布的 JSON，不会在每次移动地图时调用第三方数据接口。OSM 保留可见版权署名，禁用批量预取；其公共瓦片服务无可用性保证，大流量需更换合适的服务。Lucide 使用 ISC 授权，详见 `LUCIDE-LICENSE`。
+
+## 公共社区部署与运营
+前端继续使用 GitHub Pages，`config.js` 中 `communityApiUrl` 指向 Cloudflare Worker。构建时可用 `COMMUNITY_API_URL` 覆盖。后端源码、数据库迁移和运营审核 SQL 见 `community-worker/README.md`。
+
+公共社区支持每个投稿身份每店一条评价、聚合评分、旅行笔记、本人编辑、软删除与恢复，以及举报。服务端限制来源、内容长度和投稿频率，拒绝跨身份修改；公开接口不返回身份令牌、IP或举报人信息。运营者应定期查看 D1 的未处理举报并核实隐藏内容。
+
+`island-notes` 备份只含私人记录，不包含公开投稿的编辑凭据。没有配置或无法连接服务时，界面会提示失败，不把本机保存显示成公开发表成功。
 
 ## 更新开放资料
 无需 API Key，手动运行 `python3 import-places.py` 从官方来源刷新，审查 `places.json` / `sources.json` 后一起提交。此版本没有定时任务。

@@ -6,6 +6,7 @@ const EMPTY_NOTES = () => ({ saved: [], reviews: {}, guides: [] });
 let notes = EMPTY_NOTES();
 try { const saved = JSON.parse(localStorage.getItem('island-notes')); if (validNotes(saved)) notes = saved; } catch { /* A restricted browser can still explore places. */ }
 let places = [], sources = null, dataState = 'loading', city = '全部', category = '全部', onlySaved = false, area = null, pageSize = 30, activeId = null, toastTimer;
+let socialPosts = [], socialLoadState = 'loading', publicRatings = {}, publicRatingsState = 'loading', ratingsRequest = 0, cleanupPlaceCommunity, cleanupCommunityHub, cleanupSocial;
 function toast(message) {
   clearTimeout(toastTimer); $('#toast').textContent = message; $('#toast').hidden = false;
   toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 4500);
@@ -19,6 +20,34 @@ function personalRating(place) {
   const rows = notes.reviews[place.id] || [];
   return rows.length ? `我的评分 ${(rows.reduce((sum, r) => sum + r.stars, 0) / rows.length).toFixed(1)} · ${rows.length} 次记录` : '暂无评分';
 }
+function publicRating(place) {
+  const rating = publicRatings[place.id];
+  return rating && Number.isFinite(rating.average) && Number.isInteger(rating.count) && rating.count > 0
+    ? `本站 ${rating.average.toFixed(1)} / 5 · ${rating.count} 条评价` : '';
+}
+function detailRating(place) {
+  return publicRating(place) || (publicRatingsState === 'ready' ? '还没有公开评价' : publicRatingsState === 'loading' ? '正在读取公开评分…' : '公开评分暂不可用');
+}
+function refreshDetailRating() {
+  const place = places.find(row => row.id === activeId);
+  const target = $('#detailContent .detail-rating');
+  if ($('#detail').open && place && target) target.textContent = detailRating(place);
+}
+async function loadPublicRatings() {
+  const version = ++ratingsRequest; publicRatingsState = 'loading'; refreshDetailRating();
+  try {
+    const base = new URL(window.TRAVEL_CONFIG?.communityApiUrl || '');
+    if (base.username || base.password || base.search || base.hash || (base.protocol !== 'https:' && !(base.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(base.hostname)))) throw Error('configuration');
+    const response = await fetch(`${base.href.replace(/\/$/, '')}/v1/ratings`);
+    if (!response.ok) throw Error('http');
+    const value = await response.json();
+    if (!value.ratings || typeof value.ratings !== 'object' || Array.isArray(value.ratings)) throw Error('invalid');
+    if (version !== ratingsRequest) return;
+    publicRatings = value.ratings; publicRatingsState = 'ready'; render();
+  } catch { if (version === ratingsRequest) publicRatingsState = 'error'; }
+  if (version === ratingsRequest) refreshDetailRating();
+}
+
 const placeIcons = {'美食':'utensils','咖啡馆':'coffee','景点':'landmark','自然':'trees','散步':'footprints'};
 const icon = name => window.TravelUI?.icon(name) || '';
 function refreshUI() {
@@ -64,7 +93,7 @@ function render() {
   $('#list').innerHTML = rows.slice(0, pageSize).map(p => {
     const saved = notes.saved.includes(p.id);
     const hasRating = Boolean(notes.reviews[p.id]?.length);
-    return `<article class="card${activeId === p.id ? ' is-selected' : ''}" data-card="${esc(p.id)}"><button class="place-open" data-place="${esc(p.id)}" aria-label="查看${esc(p.name)}详情" ${activeId === p.id ? 'aria-current="true"' : ''}><span class="place-icon">${icon(placeIcons[p.type] || 'map-pin')}</span><span class="place-copy"><h3>${esc(p.name)}</h3><span class="place-meta">${esc([p.city, p.district, p.type].filter(Boolean).join(' · '))}</span>${hasRating ? `<span class="rating">${esc(personalRating(p))}</span>` : ''}</span></button><button class="heart" data-save="${esc(p.id)}" aria-pressed="${saved}" aria-label="${saved ? '取消收藏' : '收藏'}${esc(p.name)}" title="${saved ? '取消收藏' : '收藏地点'}">${icon('bookmark')}</button></article>`;
+    return `<article class="card${activeId === p.id ? ' is-selected' : ''}" data-card="${esc(p.id)}"><button class="place-open" data-place="${esc(p.id)}" aria-label="查看${esc(p.name)}详情" ${activeId === p.id ? 'aria-current="true"' : ''}><span class="place-icon">${icon(placeIcons[p.type] || 'map-pin')}</span><span class="place-copy"><h3>${esc(p.name)}</h3><span class="place-meta">${esc([p.city, p.district, p.type].filter(Boolean).join(' · '))}</span>${publicRating(p) ? `<span class="rating public-rating">${esc(publicRating(p))}</span>` : ''}${hasRating ? `<span class="rating">${esc(personalRating(p))}</span>` : ''}</span></button><button class="heart" data-save="${esc(p.id)}" aria-pressed="${saved}" aria-label="${saved ? '取消收藏' : '收藏'}${esc(p.name)}" title="${saved ? '取消收藏' : '收藏地点'}">${icon('bookmark')}</button></article>`;
   }).join('') || (onlySaved && !hasSavedPlaces
     ? `<div class="empty"><span class="empty-icon">${icon('bookmark')}</span><h3>收藏你的下一站</h3><p>点击地点旁的收藏按钮，留待出发时查看。</p><button id="browse-places">去探索地点</button></div>`
     : `<div class="empty"><span class="empty-icon">${icon('search')}</span><h3>${onlySaved ? '没有符合条件的收藏' : '没有找到地点'}</h3><p>换个关键词，或试试其他地图区域。</p><button id="reset-filters">清除筛选</button></div>`);
@@ -104,6 +133,48 @@ function toggleSaved(id) {
   notes.saved = notes.saved.includes(id) ? notes.saved.filter(value => value !== id) : [...notes.saved, id];
   persist(); render();
 }
+function renderSocialForPlace(place) {
+  const container = $('#social-place'); if (!container) return;
+  cleanupSocial?.();
+  if (socialLoadState === 'ready') {
+    const view = window.SocialEmbeds?.renderPlace(container, {placeId: place.id, posts: socialPosts});
+    cleanupSocial = () => view?.destroy();
+  } else {
+    container.replaceChildren();
+    const note = document.createElement('p'); note.className = 'dialog-note'; note.setAttribute('role', 'status');
+    note.textContent = socialLoadState === 'loading' ? '正在查找已关联的公开帖子…' : '暂时无法加载相关帖子。';
+    container.append(note);
+    if (socialLoadState === 'error') {
+      const retry = document.createElement('button'); retry.className = 'secondary'; retry.textContent = '重新加载';
+      retry.onclick = () => { loadSocialPosts(); renderSocialForPlace(place); }; container.append(retry);
+    }
+  }
+  refreshUI();
+}
+function mountPlaceContent(place) {
+  cleanupPlaceCommunity?.(); cleanupSocial?.();
+  cleanupPlaceCommunity = window.TravelCommunity?.mountPlace($('#community-place'), {place, places});
+  $('#detailContent').querySelectorAll('[data-place-panel]').forEach(button => {
+    button.onclick = () => {
+      const social = button.dataset.placePanel === 'social';
+      $('#place-community-panel').hidden = social; $('#place-social-panel').hidden = !social;
+      $('#detailContent').querySelectorAll('[data-place-panel]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      if (social) renderSocialForPlace(place);
+    };
+  });
+}
+async function loadSocialPosts() {
+  socialLoadState = 'loading';
+  try {
+    const response = await fetch('./social-posts.json'); if (!response.ok) throw Error('http');
+    const rows = await response.json(); if (!Array.isArray(rows)) throw Error('invalid');
+    socialPosts = window.SocialEmbeds.validEntries(rows, new Set(places.map(place => place.id)));
+    socialLoadState = 'ready';
+  } catch { socialLoadState = 'error'; }
+  if ($('#detail').open && !$('#place-social-panel')?.hidden) {
+    const place = places.find(row => row.id === activeId); if (place) renderSocialForPlace(place);
+  }
+}
 function openPlace(id, moveMap = true) {
   const p = places.find(place => place.id === id); if (!p) return;
   activeId = id;
@@ -115,9 +186,9 @@ function openPlace(id, moveMap = true) {
   const facts = `<dl class="place-facts"><div><dt>${icon('map-pin')}地址</dt><dd>${esc(p.address || `${p.locationLabel || p.city} · 详细地址未提供`)}</dd></div><div><dt>${icon('clock-3')}营业时间</dt><dd>${esc(p.openingHours || '来源未提供，出发前请确认')}</dd></div><div><dt>${icon('phone')}联系电话</dt><dd>${esc(p.phone || '来源未提供')}</dd></div>${safeUrl(p.website) ? `<div><dt>${icon('globe')}网站</dt><dd>${sourceLink(p.website, '相关网站')}</dd></div>` : ''}</dl>`;
   const mapLinks = `<div class="detail-links">${sourceLink(`https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=17/${p.lat}/${p.lng}`, '地图位置')}${sourceLink(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.name} ${p.address || p.city}`)}`, 'Google Maps 导航')}</div>`;
   const origin = `${sourceMarkup(p.source)}${(p.additionalSources || []).map(source => `<p class="dialog-note">坐标等基础资料的补充来源</p>${sourceMarkup(source)}`).join('')}${p.image && p.imageSource ? `<p class="dialog-note">图片出处：${sourceLink(p.imageSource, p.source.name)}</p>` : ''}<p class="dialog-note">官方资料选集不代表即时营业状态，出发前请核实。${safeUrl(p.image) ? '' : '此地点暂无可用实景照片。'}</p>`;
-  const discussions = `<p class="dialog-note">前往平台搜索原文。本站未导入这些平台的帖子或评论。</p><div class="detail-links">${[['Threads','https://www.threads.com/search?q='],['Dcard','https://www.dcard.tw/search?query='],['小红书','https://www.xiaohongshu.com/search_result?keyword=']].map(([label,url]) => sourceLink(url + encodeURIComponent(`${p.city} ${p.name}`), label)).join('')}</div>`;
+  const discussions = `<p class="dialog-note">继续前往平台搜索更多原文。</p><div class="detail-links">${[['Threads','https://www.threads.com/search?q='],['Facebook','https://www.facebook.com/search/posts/?q='],['Instagram','https://www.instagram.com/explore/search/keyword/?q='],['Dcard','https://www.dcard.tw/search?query='],['小红书','https://www.xiaohongshu.com/search_result?keyword=']].map(([label,url]) => sourceLink(url + encodeURIComponent(`${p.city} ${p.name}`), label)).join('')}</div>`;
   const experience = `<p class="dialog-note">仅保存于当前浏览器，不会发布为公共评价。</p><div>${reviews.map(r => `<div class="review"><span class="rating">我的评分 ${r.stars} / 5</span><p>${esc(r.text)}</p></div>`).join('')}</div><form id="reviewForm"><label>我的评分<select name="stars" aria-label="我的评分">${[5,4,3,2,1].map(n => `<option value="${n}">${n} 星</option>`).join('')}</select></label><label>体验<textarea name="text" required maxlength="2000" rows="3" placeholder="去过之后，留下你的真实体验。"></textarea></label><button class="primary">保存体验</button></form>`;
-  $('#detailContent').innerHTML = `${image}<div class="detail-heading"><span class="place-icon">${icon(placeIcons[p.type] || 'map-pin')}</span><div><p class="detail-topline">${esc([p.city,p.district,p.type].filter(Boolean).join(' · '))}</p><h2 id="detail-title">${esc(p.name)}</h2></div></div><p class="detail-rating">${esc(personalRating(p))}${reviews.length ? ' · 仅为本机记录' : ''}</p><div class="detail-actions"><button class="secondary detail-save" id="detail-save" aria-pressed="${saved}">${icon('bookmark')}<span>${saved ? '已收藏' : '收藏地点'}</span></button><button class="secondary" type="button" id="guide-place">${icon('square-pen')}<span>写攻略</span></button></div>${facts}${mapLinks}${p.description ? disclosure('地点简介', `<p>${esc(p.description)}</p>`) : ''}${disclosure('资料来源与更新时间', origin)}${disclosure('搜索相关讨论', discussions)}${disclosure(`我的体验${reviews.length ? ` · ${reviews.length} 条记录` : ''}`, experience, Boolean(reviews.length))}`;
+  $('#detailContent').innerHTML = `${image}<div class="detail-heading"><span class="place-icon">${icon(placeIcons[p.type] || 'map-pin')}</span><div><p class="detail-topline">${esc([p.city,p.district,p.type].filter(Boolean).join(' · '))}</p><h2 id="detail-title">${esc(p.name)}</h2></div></div><p class="detail-rating">${esc(detailRating(p))}</p><div class="detail-actions"><button class="secondary detail-save" id="detail-save" aria-pressed="${saved}">${icon('bookmark')}<span>${saved ? '已收藏' : '收藏地点'}</span></button><button class="secondary" type="button" id="guide-place">${icon('square-pen')}<span>写攻略</span></button></div>${facts}${mapLinks}<div class="place-content-tabs" role="group" aria-label="地点内容"><button type="button" data-place-panel="community" aria-pressed="true">评价与笔记</button><button type="button" data-place-panel="social" aria-pressed="false">相关帖子</button></div><section id="place-community-panel"><div id="community-place"></div></section><section id="place-social-panel" hidden><div id="social-place"></div></section>${p.description ? disclosure('地点简介', `<p>${esc(p.description)}</p>`) : ''}${disclosure('资料来源与更新时间', origin)}${disclosure('前往平台找更多', discussions)}${disclosure(`我的私人体验${reviews.length ? ` · ${reviews.length} 条记录` : ''}`, experience, Boolean(reviews.length))}`;
   $('#detail-save').onclick = () => {
     toggleSaved(id);
     const isSaved = notes.saved.includes(id);
@@ -131,8 +202,9 @@ function openPlace(id, moveMap = true) {
     const saved = persist(); render(); openPlace(id, false); if (saved) toast('体验已保存到当前浏览器。');
   };
   $('#guide-place').onclick = () => {
-    $('#detail').close(); showEditor(); $('#guideForm').elements.title.value = `${p.name} · 旅行笔记`; $('#guideForm').elements.city.value = p.city; $('#guideForm').elements.url.value = p.source.url;
+    $('#detail').close(); showEditor(p);
   };
+  mountPlaceContent(p);
   if (!$('#detail').open) $('#detail').showModal();
   refreshUI();
 }
@@ -141,7 +213,12 @@ function renderGuides() {
   refreshUI();
 }
 let editingGuide = null;
-function showEditor() { editingGuide = null; $('#guideForm').reset(); $('#guide-status').textContent = ''; renderGuides(); $('#editor').showModal(); refreshUI(); }
+function showEditor(place) {
+  editingGuide = null; $('#guideForm').reset(); $('#guide-status').textContent = ''; renderGuides();
+  cleanupCommunityHub?.();
+  cleanupCommunityHub = window.TravelCommunity?.mountHub($('#communityHub'), {places, initialPlaceId: typeof place?.id === 'string' ? place.id : ''});
+  $('#editor').showModal(); refreshUI();
+}
 $('#guideForm').onsubmit = event => {
   event.preventDefault(); const guide = Object.fromEntries(new FormData(event.target));
   guide.title = guide.title.trim(); guide.body = guide.body.trim(); guide.city = guide.city.trim();
@@ -205,8 +282,11 @@ async function loadPlaces() {
   dataState = 'loading'; render();
   try {
     const response = await fetch('./places.json'); if (!response.ok) throw Error('http');
-    places = validPlaces(await response.json()); dataState = 'ready'; render();
+    places = validPlaces(await response.json()); dataState = 'ready'; render(); loadSocialPosts();
   } catch { dataState = 'error'; render(); }
 }
 fetch('./sources.json').then(response => response.ok ? response.json() : null).then(value => { sources = value; }).catch(() => {});
-render(); loadPlaces(); TravelMap.init();
+window.addEventListener('travel-community-updated', loadPublicRatings);
+$('#detail').addEventListener('close', () => { cleanupPlaceCommunity?.(); cleanupSocial?.(); });
+$('#editor').addEventListener('close', () => cleanupCommunityHub?.());
+render(); loadPlaces(); loadPublicRatings(); TravelMap.init();

@@ -1,0 +1,66 @@
+/* Public community and source-hosted discussions. */
+.place-content-tabs{display:flex;gap:4px;background:#f5f5f5;padding:4px;border-radius:11px;margin:0 0 22px}
+.place-content-tabs button{flex:1;padding:10px 12px;border-radius:8px;font-size:12px;color:#666;min-height:38px}
+.place-content-tabs [aria-pressed=true]{background:#fff;color:#181818;box-shadow:0 1px 4px #0000000a}
+#editor{width:min(620px,calc(100vw - 32px))}
+.community-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0}
+.community-heading h3,.community-subheading{margin:0;font-size:15px;color:#222}
+.community-rating{font-size:11px!important;font-variant-numeric:tabular-nums;margin:0!important;text-align:right}
+.community-subheading{margin:26px 0 12px}
+.community-intro{margin:0 0 18px!important}
+.community-status{font-size:11px!important;margin:8px 0;line-height:1.8}
+.community-status:empty{display:none}
+.community-status.is-error{background:#f5f5f5;border-left:2px solid #222;padding:10px 12px;color:#333}
+.community-status button{margin-left:9px}
+.community-empty{font-size:12px!important;background:#fafafa;border:1px dashed #e7e7e7;border-radius:10px;padding:17px;color:#707070}
+.community-card{padding:18px 0;border-top:1px solid #ececec;min-width:0}
+.community-author{display:flex;align-items:center;justify-content:space-between;gap:15px;color:#707070;font-size:10px}
+.community-author strong{color:#333;font-size:12px;font-weight:550;overflow-wrap:anywhere}
+.community-title{font-size:15px;line-height:1.7;font-weight:550;margin:12px 0 6px;overflow-wrap:anywhere}
+.community-context{font-size:10px!important;margin:5px 0!important;color:#707070}
+.community-stars{font-size:12px!important;color:#222;font-weight:550;letter-spacing:.4px;margin:9px 0!important}
+.community-body{white-space:pre-wrap;overflow-wrap:anywhere;color:#484848!important;font-size:12px!important;line-height:1.95}
+.community-actions{display:flex;gap:12px;align-items:flex-start;margin-top:10px;flex-wrap:wrap}
+.community-action,.community-report>summary{font-size:11px;color:#666;padding:5px 0;text-decoration:underline;text-underline-offset:3px}
+.community-composer{border:1px solid #e6e6e6;border-radius:12px;margin:15px 0 20px;background:#fff}
+.community-composer>summary{padding:14px 16px;font-size:12px;font-weight:500;cursor:pointer;list-style-position:inside;color:#333}
+.community-composer[open]>summary{border-bottom:1px solid #eee}
+.community-form{padding:17px 16px 18px;min-width:0}
+.community-form .community-field{display:block;font-size:11px;font-weight:500;color:#555;margin:0 0 16px}
+.community-field input,.community-field textarea,.community-field select{display:block;width:100%;max-width:100%;min-width:0;border:1px solid #e4e4e4;border-radius:9px;background:#fafafa;color:#222;margin:7px 0 0;padding:11px;font-size:12px;line-height:1.7}
+.community-field select{white-space:nowrap;text-overflow:ellipsis}
+.community-field input:read-only{background:#f3f3f3;color:#707070}
+.community-public-note{font-size:10px!important;color:#707070!important;margin:0 0 15px!important;line-height:1.8!important}
+.community-submit{min-height:40px}
+.community-form[data-busy=true]{opacity:.7}
+.community-edit-form{border:1px solid #e7e7e7;border-radius:11px;background:#fafafa;margin-top:15px}
+.community-edit-form>.community-action{margin-left:14px}
+.community-report{font-size:11px}
+.community-report>summary{cursor:pointer;list-style:none}
+.community-report[open]{width:100%}
+.community-report .community-form{background:#f7f7f7;border-radius:10px;margin:6px 0}
+.community-feed-filter{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:8px 0 20px;border-bottom:1px solid #eee}
+.community-feed-filter .community-field{flex:1;min-width:130px;font-size:10px;margin:0}
+.community-feed-filter .secondary{min-height:40px}
+.community-my-posts{margin:0 0 8px 6px}
+.community-card.is-deleted{opacity:.65}
+.private-notes{margin-top:30px}
+.private-notes>.disclosure-body{padding:8px 0}
+.social-platforms{display:flex;gap:5px;flex-wrap:wrap;margin:12px 0 18px}
+.social-platform-button{border:1px solid #e7e7e7;border-radius:999px;padding:8px 11px;font-size:10px;min-height:34px;color:#666}
+.social-platform-button[aria-pressed=true]{background:#222;border-color:#222;color:#fff}
+.social-post{border:1px solid #e7e7e7;border-radius:12px;padding:16px;margin:12px 0 16px;min-width:0;overflow:hidden}
+.social-post-header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.social-post-source{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.social-platform-name{font-size:12px;font-weight:550;color:#222}
+.social-post-kind{font-size:9px;background:#f1f1f1;border-radius:5px;padding:3px 6px;color:#666}
+.social-original{font-size:10px;color:#555;line-height:1.8;overflow-wrap:anywhere}
+.social-post-label{font-size:12px!important;line-height:1.8;margin:13px 0!important}
+.social-load{display:inline-flex;align-items:center;background:#f5f5f5;border:1px solid #e6e6e6;border-radius:8px;padding:9px 12px;font-size:11px;min-height:36px}
+.social-embed-host{margin-top:13px;max-width:100%;overflow:auto;border-radius:9px}
+.social-official-frame{border:0;display:block;width:100%;max-width:500px;min-width:300px;background:#fafafa}
+.social-embed-status,.social-disclosure{font-size:10px!important;line-height:1.8;color:#707070}
+.social-empty{font-size:12px!important;padding:20px 15px;border:1px dashed #e5e5e5;border-radius:11px;background:#fafafa}
+.social-embed-host blockquote{margin:0!important;min-width:0!important;max-width:100%!important}
+.public-rating{color:#333!important;font-weight:500}
+@media(max-width:700px){#editor{width:calc(100vw - 24px)}.community-heading{align-items:flex-start}.community-heading h3{font-size:14px}.community-rating{font-size:10px!important}.community-form{padding:15px 13px}.community-field input,.community-field select,.community-field textarea{font-size:16px}.community-public-note{font-size:10px!important}.community-author{font-size:10px}.community-card{padding:16px 0}.social-post{padding:12px}.social-platforms{gap:4px}.social-platform-button{font-size:10px;padding:8px 10px}.community-feed-filter{gap:8px}.community-body{font-size:12px!important}}
