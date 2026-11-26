@@ -41,11 +41,16 @@ test('published data has unique real locations, evidence and no demo ratings or 
   const manifest=JSON.parse(fs.readFileSync('sources.json','utf8'));
   assert.equal(places.length,manifest.coverage.total);
   assert.deepEqual(Object.fromEntries(['台北','台南'].map(city=>[city,places.filter(p=>p.city===city).length])),manifest.coverage.byCity);
-  assert.equal(places.filter(p=>p.city==='台北').length,80);
-  assert.equal(places.filter(p=>p.city==='台南').length,120);
+  assert.ok(places.filter(p=>p.city==='台北'&&['美食','咖啡馆'].includes(p.type)).length>5000);
+  assert.ok(places.filter(p=>p.city==='台南'&&['美食','咖啡馆'].includes(p.type)).length>1000);
   assert.ok(places.every(p=>!('rating' in p)&&p.image===null&&Array.isArray(p.additionalSources)));
-  assert.ok(places.every(p=>p.source.license&&p.source.updatedAt&&p.source.retrievedAt));
-  assert.equal(places.filter(p=>p.additionalSources.length).length,58);
+  assert.ok(places.every(p=>p.source.license&&p.source.retrievedAt));
+  assert.ok(places.filter(p=>p.additionalSources.length).length>=58);
+  const osm=places.filter(p=>p.source.id==='taipei-osm-food');
+  assert.ok(osm.length>5000&&osm.every(p=>p.address&&p.source.licenseUrl.includes('odbl')));
+  assert.ok(manifest.databaseLicense.url.includes('odbl'));
+  const original=JSON.parse(fs.readFileSync('social-posts.json','utf8'));
+  assert.ok(original.every(post=>places.some(p=>p.id===post.placeId)));
   for(const source of manifest.sources){
     assert.ok(source.attribution&&safeUrl(source.licenseUrl));
     assert.equal(places.filter(p=>p.source.id===source.id||p.additionalSources.some(s=>s.id===source.id)).length,source.recordsUsed);

@@ -110,6 +110,7 @@ test('nearby points across a grid boundary merge without absorbing distant place
   const distant = s.created.find(marker => marker.options.icon.html !== '2');
   distant.click(); assert.equal(selected, 'distant');
   const count = s.created.length;
+  s.viewport.west = 119; s.viewport.east = 125;
   s.map.zoom = 15; s.emit('moveend');
   const expanded = s.created.slice(count);
   assert.equal(expanded.length, 3);
@@ -176,3 +177,13 @@ test('Google authentication failure settles initialization and ignores a late ca
   assert.ok(s.context.error); assert.equal(s.api.getBounds(), null);
   assert.equal(s.created.length, 0);
 });
+
+ test('street-scale markers exclude offscreen places and reappear after panning', async () => {
+  const s=setup(); await s.api.init(); s.map.zoom=16;
+  s.api.setPlaces([...rows,{...rows[0],id:'offscreen',lat:23,lng:120.2}],()=>{});
+  assert.equal(s.created.filter(m=>!m.removed).length,1);
+  s.viewport.south=22.9; s.viewport.north=23.1; s.viewport.west=120.1; s.viewport.east=120.3;
+  s.emit('moveend');
+  assert.equal(s.created.filter(m=>!m.removed).length,1);
+  assert.equal(s.created.filter(m=>!m.removed)[0].position[0],23);
+ });
