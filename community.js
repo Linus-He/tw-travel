@@ -100,7 +100,7 @@
       saveReview: values => request('/v1/reviews', { method: 'POST', body: values, auth: true }),
       saveGuide: values => request('/v1/guides', { method: 'POST', body: values, auth: true }),
       edit: (type, contentId, values) => request(`/v1/${type === 'review' ? 'reviews' : 'guides'}/${id(contentId)}`, { method: 'PATCH', body: values, auth: true }),
-      remove: (type, contentId) => request(`/v1/${type === 'review' ? 'reviews' : 'guides'}/${id(contentId)}`, { method: 'DELETE', auth: true }),
+      remove: (type, contentId) => request(`/v1/${type === 'review' ? 'reviews' : 'guides'}/${id(contentId)}`, { method: 'DELETE', body: {}, auth: true }),
       restore: (type, contentId) => request(`/v1/${type === 'review' ? 'reviews' : 'guides'}/${id(contentId)}/restore`, { method: 'POST', body: {}, auth: true }),
       report: values => request('/v1/reports', { method: 'POST', body: values, auth: true }),
     };
