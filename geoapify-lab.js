@@ -19,6 +19,18 @@ function normalize(feature){
  website:str(p.website||contact.website||raw.website||raw['contact:website']),
  coordinates:Array.isArray(coordinates)&&coordinates.length>=2&&coordinates.slice(0,2).every(Number.isFinite)?coordinates.slice(0,2):null};
 }
+function osmIdentity(feature){
+ const source=feature?.properties?.datasource,raw=source?.raw;
+ if(source?.sourcename!=='openstreetmap'||!raw)return '';
+ const type={n:'node',node:'node',w:'way',way:'way',r:'relation',relation:'relation'}[str(raw.osm_type).toLowerCase()];
+ const id=str(raw.osm_id);
+ return type&&/^[1-9]\d*$/.test(id)?`${type}/${id}`:'';
+}
+function matchDetails(feature,candidates){
+ const id=str(feature?.properties?.place_id),osm=osmIdentity(feature);
+ return candidates.find(f=>id&&str(f?.properties?.place_id)===id)||
+   (osm?candidates.find(f=>f?.properties?.feature_type==='details'&&osmIdentity(f)===osm):undefined);
+}
 function createClient({key,fetch:fetcher=root.fetch?.bind(root),maxCalls=60,onCall=()=>{}}){
  let calls=0;
  return {get calls(){return calls;},async get(path,params,signal){
@@ -34,7 +46,7 @@ function createClient({key,fetch:fetcher=root.fetch?.bind(root),maxCalls=60,onCa
  },search(bounds,category,signal){const url=new URL(placesUrl(key,bounds,category));return this.get('/v2/places',Object.fromEntries([...url.searchParams].filter(([k])=>k!=='apiKey')),signal);},
  details(id,signal){if(!str(id))throw Error('此店家没有可查询的编号。');return this.get('/v2/place-details',{id,features:'details',lang:'zh'},signal);}};
 }
-if(typeof module!=='undefined')module.exports={placesUrl,normalize,createClient};
+if(typeof module!=='undefined')module.exports={placesUrl,normalize,createClient,matchDetails};
 if(!root.document)return;
 const $=s=>document.querySelector(s),centers={taipei:[121.535,25.033],tainan:[120.202,22.994]};
 let map,client,popup,results=new Map(),searchController,detailController,sequence=0,detailSequence=0,timer,connecting=false;
@@ -52,7 +64,7 @@ async function select(id){
  const feature=results.get(id);if(!feature)return;detailController?.abort();const controller=new AbortController();detailController=controller;const version=++detailSequence;
  show(feature);const p=normalize(feature);popup?.remove();if(p.coordinates)popup=new root.maplibregl.Popup().setLngLat(p.coordinates).setDOMContent(node('strong',p.name)).addTo(map);
  status('已显示搜索资料，正在补充店家详情…');
- try{const value=await client.details(id,controller.signal);if(version!==detailSequence)return;const exact=value.features.find(f=>f.properties?.place_id===id);if(exact){show({type:'Feature',geometry:exact.geometry,properties:{...feature.properties,...exact.properties}});status('已读取店家详情。');}else status('详情未返回匹配店家，保留搜索结果。');}
+ try{const value=await client.details(id,controller.signal);if(version!==detailSequence)return;const exact=matchDetails(feature,value.features);if(exact){show({type:'Feature',geometry:exact.geometry,properties:{...feature.properties,...exact.properties}});status('已读取店家详情。');}else status('详情未返回匹配店家，保留搜索结果。');}
  catch(error){if(version===detailSequence&&error.name!=='AbortError')status(error.message+' 已保留搜索资料。',true);}
 }
 async function search(){
