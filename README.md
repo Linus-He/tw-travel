@@ -7,25 +7,15 @@
 - 使用系统字体与随站发布的 Lucide 图标，支持键盘操作、减少动态效果和减少透明度偏好。
 
 ## 真实地点与范围探索
-首批 **200 个真实地点**：台北 80 个景点，台南 60 个景点与 60 个餐饮地点。按官方来源 ID 与行政区轮选，覆盖台北 12 区、台南 37 区，**不是热门榜**。
+当前 **6,710 个地点**：餐饮 6,570 个（台北 5,466、台南 1,104），并保留原有 140 个景点。台北餐饮来自 OpenStreetMap 市界范围内的具名餐馆、咖啡馆、快餐与美食街，仅收录有具体街道地址和坐标的点；台南采用官方美食资料，排除纯租车等非餐饮类别。此资料不是全部商家或推荐排名。
 
-- 城市、分类、关键词、收藏和地图范围可组合筛选；支持常见简繁体关键词。
-- 移动或缩放地图后点击“搜索此区域”，列表采用当时视野的范围快照。继续移动不会偷偷更改列表，清除范围可恢复全部结果。
-- 小比例尺聚合标记，点击数字放大；街道级展开单点，点击详情定位。
-- 列表每次显示 30 条，支持加载更多。
-- 详情保留官方名称、地址、坐标、来源营业时间、电话、出处、原始更新时间与独立收录日期。
+共 6,630 个地点有详细地址，2,407 个有来源营业时间，3,584 个有电话，933 个有网站。缺失字段保留空值；原始更新时间与快照取得时间分开记录，不提供实时营业判断、推测价格、虚构照片或第三方评分。
 
-资料来自[观光署景点](https://data.gov.tw/dataset/7777)、[观光署餐饮](https://data.gov.tw/dataset/7779)、[台南景点](https://data.gov.tw/dataset/6183)。按[政府资料开放授权条款第 1 版](https://data.gov.tw/license)使用，详细署名、下载地址、文件 SHA-256、处理规则见 `sources.json`，页面“资料来源与说明”也提供署名。
+原有 200 个地点 ID 保留，台南仅按官方 ID 和精确店名补充字段。OSM 使用对象类型与对象 ID，分店不会按相似店名合并；近距离同名重复点按五位以下精度筛除，规则见脚本。公开评价与私人收藏继续对应原 ID。
 
-### 已知覆盖边界
-- 本批次没有台北餐饮资料，不表示台北没有店家。台北详细街道地址在此次来源中缺失，保留缺失状态，只展示已知行政区。
-- 120 条有详细地址，54 条有来源营业时间。没有实时营业状态，出发前请核实；个别来源更新时间较旧，不能把收录日当更新日。
-- 未导入任何平台评分、评论和照片；列表不显示虚构评分或照片占位。分类为本站依据名称与来源类型整理，不表示官方推荐。
-- 所有地点使用稳定官方 ID，旧版七个演示地点的 numeric 收藏/评价继续保存在导出备份中，不会混接到真实地点。
-- 收藏、私人体验和私人笔记保存在当前浏览器，继续支持备份导入导出，不会自动上传。
-- 新增独立的公共评价与旅友笔记，由 Cloudflare Worker + D1 保存，可跨设备读取。访客使用昵称主动公开发表；编辑、删除和恢复权限保存在发布设备，清除浏览器数据后需联系运营者处理。昵称不等于已核验身份或到店证明。
-- 地点页支持 Threads、Facebook、Instagram 官方原帖嵌入，按需点击加载；内容由后台 `social-posts.json` 关联。当前只核实收录 1 条博物馆官方历史 Facebook 动态，0 条外部旅友评价，不代表三平台全网评论已接入。
-- 官方动态与旅友原帖分别标注，来源说明见 `SOCIAL-CURATION.md`。帖文可能删除、设为私密或限制嵌入，始终保留原文入口。
+© OpenStreetMap contributors。整合资料库 `places.json` 按 [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) 公开提供；政府来源保留政府资料开放授权条款及署名。逐条出处和下载快照 SHA-256 见 `sources.json`。地图和资料库由社区及官方资料维护，不代表逐店已现场核实。
+
+公共评价、共享笔记、作者编辑/撤回与举报功能保留，私人笔记不会上传。相关帖子功能目前仅有 1 条官方历史帖，尚无外部旅友评论库。
 
 ## 运行与验证
 运行 `python3 -m http.server 8000`，访问 http://localhost:8000。
@@ -48,7 +38,7 @@ python3 build-site.py
 `island-notes` 备份只含私人记录，不包含公开投稿的编辑凭据。没有配置或无法连接服务时，界面会提示失败，不把本机保存显示成公开发表成功。
 
 ## 更新开放资料
-无需 API Key，手动运行 `python3 import-places.py` 从官方来源刷新，审查 `places.json` / `sources.json` 后一起提交。此版本没有定时任务。
+先用 `import-places.py` 重建基础官方资料，再用 `enrich-places.py` 加入餐饮；两者均无需 API Key。不要只运行第一步后覆盖线上资料。此版本没有定时任务。
 
 离线可复现：
 ```sh
@@ -62,3 +52,13 @@ main 通过 `.github/workflows/deploy.yml` 自动测试、打包到 public/ 后�
 
 ## 可选 Google 地图
 暂时无需配置，默认免费 OSM。若以后切换，在 Google Cloud 关联结算、启用 Maps JavaScript API，创建仅允许 `https://linus-he.github.io/*` 和 Maps JavaScript API 的网站 Key。填入 GitHub Actions Repository Secret `GOOGLE_MAPS_API_KEY`，可选 Variable `GOOGLE_MAPS_MAP_ID`（未填时用 DEMO_MAP_ID 测试），再重新发布。浏览器 Key 对访客可见，Secret 仅避免源码提交，保护来自来源/API 限制。
+
+餐饮扩充可复现命令：
+```sh
+python3 enrich-places.py --taipei-osm /tmp/tw-travel-enrichment/taipei-osm.json --tainan-dining /tmp/tw-travel-enrichment/tainan-dining.json --retrieved-at 2026-11-26
+```
+台南输入为 `https://www.twtainan.net/data/shops_zh-tw.json`。OSM 使用 Overpass 一次性查询：
+```
+[out:json][timeout:120];area["ISO3166-2"="TW-TPE"]["boundary"="administrative"]->.a;nwr["amenity"~"^(restaurant|cafe|fast_food|food_court)$"]["name"](area.a);out center tags;
+```
+仅在更新快照时请求，不在用户移动地图时批量查询。每次扩充同时重生成 Worker 的允许地点表，再发布后端与前端。

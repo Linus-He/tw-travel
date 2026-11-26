@@ -1,23 +1,34 @@
 {
-  "retrievedAt": "2026-11-25",
-  "formatVersion": 1,
+  "retrievedAt": "2026-11-26",
+  "formatVersion": 2,
   "coverage": {
-    "total": 200,
+    "total": 6710,
     "byCity": {
-      "台北": 80,
-      "台南": 120
+      "台北": 5546,
+      "台南": 1164
     },
     "byType": {
+      "美食": 5465,
+      "咖啡馆": 1105,
       "景点": 112,
       "散步": 20,
-      "自然": 8,
-      "美食": 59,
-      "咖啡馆": 1
+      "自然": 8
     },
-    "eligibleSourceRecords": {
-      "臺北市-Attraction": 377,
-      "臺南市-Attraction": 541,
-      "臺南市-Restaurant": 588
+    "foodByCity": {
+      "台北": 5466,
+      "台南": 1104
+    },
+    "fields": {
+      "address": 6630,
+      "openingHours": 2407,
+      "phone": 3584,
+      "website": 933
+    },
+    "excluded": {
+      "tainan_nonfood": 64,
+      "tainan_invalid_position": 26,
+      "osm_missing_name_or_street_address": 8218,
+      "osm_duplicate": 4
     }
   },
   "sources": [
@@ -75,18 +86,52 @@
       "countingNote": "recordsUsed 含主來源及 additionalSources；同一地點可使用多個來源，各來源筆數不可相加作為地點總數。",
       "note": "開放資料快照，非即時營業狀態；缺失資訊不補造，圖片未匯入。",
       "attribution": "臺南市政府觀光旅遊局 2026 臺南市政府觀光旅遊局｜臺南景點；此開放資料依政府資料開放授權條款第1版釋出，遵守條款者得利用；授權條款：https://data.gov.tw/license"
+    },
+    {
+      "id": "tainan-dining",
+      "name": "臺南市政府觀光旅遊局｜美食店家",
+      "publisher": "臺南市政府觀光旅遊局",
+      "url": "https://data.tainan.gov.tw/Resource/453640e4-1592-4170-af1d-f921dbe54388?handler=GoJson",
+      "downloadUrl": "https://www.twtainan.net/data/shops_zh-tw.json",
+      "license": "政府資料開放授權條款－第1版",
+      "licenseUrl": "https://data.gov.tw/license",
+      "retrievedAt": "2026-11-26",
+      "datasetUpdatedAt": null,
+      "downloadSha256": "b927705f500617735e4abc6388301a46355e818e49322e71fce2187b2536e573",
+      "attribution": "臺南市政府觀光旅遊局，美食店家，政府資料開放授權條款第1版。",
+      "note": "排除純租車等非餐飲類；依官方ID及店名精確比對，保留既有地點ID。",
+      "primaryRecordsUsed": 1044,
+      "additionalRecordsUsed": 60,
+      "recordsUsed": 1104
+    },
+    {
+      "id": "taipei-osm-food",
+      "name": "OpenStreetMap｜台北餐飲",
+      "publisher": "OpenStreetMap contributors",
+      "url": "https://www.openstreetmap.org/copyright",
+      "downloadUrl": "https://overpass-api.de/api/interpreter",
+      "license": "Open Database License 1.0",
+      "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "retrievedAt": "2026-11-26",
+      "datasetUpdatedAt": "2026-11-26T09:42:49Z",
+      "downloadSha256": "103c7d88f7575b1580314de6c5e6add238e4724f35c5e5013d66b9f028d74a29",
+      "attribution": "© OpenStreetMap contributors，資料依 ODbL 1.0 提供：https://opendatacommons.org/licenses/odbl/1-0/",
+      "note": "只收錄有具體街道地址與座標的具名餐飲點；非全量商家名錄，不代表已確認營業。",
+      "primaryRecordsUsed": 5466,
+      "additionalRecordsUsed": 0,
+      "recordsUsed": 5466
     }
   ],
   "processingNotes": [
-    "首批限量收錄200筆：台北80景點、台南60景點與60餐飲；各群組依穩定來源ID排序並逐行政區輪選，非熱門榜或平台評分排名。",
-    "僅保留來源標示ServiceStatus=1且在城市寬範圍座標框內的資料；此欄位非即時營業狀態。",
-    "台南景點補充資料以本地ID及名稱完全相符後才合併；不做模糊合併。",
-    "每筆 source 與 additionalSources 分別列出來源紀錄ID、欄位與原始更新日期；台南補充資料不覆寫觀光署座標及電話的來源日期。",
-    "保留繁體來源專名、地址與營業時間原文；頁面城市分類採台北/台南，簡介移除HTML與多餘空白並截取最多150字。",
-    "本站分類按來源為景點/餐飲及名稱關鍵字整理，不代表來源平台分類。",
-    "台北詳細街道地址在此次全國資料中未提供，address保持空字串，locationLabel僅為官方城市與行政區。",
-    "沒有提供或無法確認的營業時間保留null；不推算今天是否營業。餐飲缺少台北資料，並不表示台北沒有餐飲店家。",
-    "評分與評論未導入；圖片一律null，不以示意照片冒充實地照片。",
-    "來源更新日期與本次取得日期分開記錄；政府開放資料不代表提供機關背書或即時查證。"
-  ]
+    "台北餐飲採OSM臺北市行政邊界查詢，只納入具名、有街道地址及座標的餐館、咖啡館、快餐與美食街。",
+    "台南美食依官方分類排除純租車資料；相同官方ID和名稱才補充既有資料，不依模糊店名混接分店。",
+    "OSM原始標籤時間不一定存在，缺失時updatedAt為null；資料庫快照時間不冒充店家資訊更新日期。",
+    "保留原始營業時間文字，沒有即時營業或價位推算；沒有導入平台評分、評論或照片。",
+    "原有140個景點與60個餐飲的穩定ID保留；資料不代表所有商戶或推薦排名。"
+  ],
+  "databaseLicense": {
+    "name": "Open Database License 1.0",
+    "url": "https://opendatacommons.org/licenses/odbl/1-0/",
+    "note": "本次整合資料庫以ODbL 1.0公開提供；各原始資料來源之署名及授權保留。可直接下載places.json。"
+  }
 }

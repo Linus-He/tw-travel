@@ -83,7 +83,11 @@ window.TravelMap = (() => {
     if (!map || failed) return;
     clearMarkers();
     const zoom = map.getZoom() || 7;
-    markers = groupPlaces(pendingRows, zoom).map(group => {
+    // At street scale only build markers in the visible viewport.
+    const bounds = zoom >= 15 ? getBounds() : null;
+    const visible = bounds ? pendingRows.filter(p => p.lat >= bounds.south && p.lat <= bounds.north &&
+      (bounds.west <= bounds.east ? p.lng >= bounds.west && p.lng <= bounds.east : p.lng >= bounds.west || p.lng <= bounds.east)) : pendingRows;
+    markers = groupPlaces(visible, zoom).map(group => {
       const clustered = group.places.length > 1;
       const place = group.places[0];
       const title = clustered ? `${group.places.length} 个地点，点击放大查看` : place.name;
