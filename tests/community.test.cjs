@@ -71,6 +71,12 @@ test('content and place IDs are encoded as single path segments; transport and m
   assert.equal(calls[1].url, `${BASE}/v1/guides/..%2Fprivate%3Ftoken%3Dx/restore`);
   assert.equal(calls[1].options.method, 'POST');
   assert.equal(calls[1].options.body, '{}');
+  // Cloudflare may expose even an empty DELETE body as a readable stream.
+  // Send an explicit JSON object so its strict body validation is portable.
+  await client.remove('guide', 'guide-id');
+  assert.equal(calls.at(-1).options.method, 'DELETE');
+  assert.equal(calls.at(-1).options.headers['Content-Type'], 'application/json');
+  assert.equal(calls.at(-1).options.body, '{}');
   await assert.rejects(client.request('//elsewhere.example'), error => error.status === 400);
   const offline = createClient({ baseUrl: BASE, storage: store, fetch: async () => { throw new Error('offline'); } });
   await assert.rejects(offline.saveReview({ text: 'still a draft' }), error => error.status === 0);
