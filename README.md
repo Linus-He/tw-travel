@@ -71,3 +71,12 @@ python3 enrich-places.py --taipei-osm /tmp/tw-travel-enrichment/taipei-osm.json 
 若高德确认有适用的测试权限，开通步骤：在高德开放平台注册并完成个人开发者认证；应用管理 → 我的应用 → 创建应用 → 添加 Key，平台选 **Web端（JS API）**。将页面所在域名 `linus-he.github.io` 加入网站白名单，取得该 Key 对应的 securityJsCode，在验证页本地填写。若普通台湾图面不可用，再向高德确认是否需世界地图权限，不要仅凭底图可显示就认定搜索、详情和评分均可用。
 
 此页直接使用安全密钥仅供本人临时调试，正式部署接入必须按高德官方指南使用安全代理并限制来源、频率与调用额度。当前没有账号 Key，尚未完成台湾地区实际接口验证；页面中的自动化检查使用模拟返回，不代表实际覆盖或评分可用。连接及每次搜索/详情会消耗高德账号配额，自动搜索默认关闭。
+
+## Geoapify 动态地图验证
+独立页面 `geoapify-lab.html`：Geoapify 彩色底图 + MapLibre，移动地图后按当前视野查询餐馆、咖啡馆或快餐，点击橙色标记读取详情。不会加载 `places.json`；每次最多 20 家，非全量店家展示。地图街区过大时提示放大，查询暂停一秒后触发，旧请求取消并隔离过期响应。每页店家请求（含详情）上限 60 次；底图消耗另计，不将请求数冒充免费积分数。
+
+2026-11-26 已通过 Geoapify 官方 Places Playground 的正常界面各执行一次台北与台南范围的餐馆查询。台北返回無老鍋、博多拉麵、微笑老蕭拉麵等；台南返回赤崁208巷燒烤、姚燒鳥等。台南样本中的部分结果包含 `contact.phone` 和 `opening_hours`；未做逐店实地核实，也没有外部评分或评论。测试只在官方演示内进行，未复制或复用演示凭据。
+
+本站验证页需要本人免费项目 Key：打开 https://myprojects.geoapify.com/ 注册，创建项目，取得 API Key，并将网站来源限制为 `https://linus-he.github.io`（按控制台支持的配置格式）。仅在页面填写，不要提交到 GitHub 或聊天。此页不保存 Key，不上传本站后台；未连接时不请求店家数据。免费计划当前为每天 3,000 积分、无需信用卡、允许在限额内用于生产并要求署名，来源 https://www.geoapify.com/pricing/ 。地图与搜索共享积分；超过上限需暂停或另行评估套餐，不自动开通付费服务。
+
+官方演示：https://apidocs.geoapify.com/playground/places/ ；Places API：https://apidocs.geoapify.com/docs/places ；详情：https://apidocs.geoapify.com/docs/place-details 。免费额度及服务政策可能变化，应在连接前核对控制台。本轮尚未用本人 Key 完成本站页面端到端验证，不把官方演示成功冒充本站已接入成功。
