@@ -1,5 +1,5 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {placesUrl,normalize,createClient}=require('../geoapify-lab.js');
+const {placesUrl,normalize,createClient,matchDetails}=require('../geoapify-lab.js');
 const bounds={west:121.53,south:25.03,east:121.54,north:25.04};
 const data={type:'FeatureCollection',features:[{type:'Feature',properties:{name:'赤崁208巷燒烤',place_id:'provider-id',contact:{phone:'+886 6 221 1116'},opening_hours:'17:00-25:00'},geometry:{type:'Point',coordinates:[120.202,22.994]}}]};
 test('live viewport URLs constrain Taiwan streets and reject unsupported categories and world-size bounds',()=>{
@@ -22,4 +22,16 @@ test('client only calls provider endpoints, enforces a session budget and never 
  await assert.rejects(c.search(bounds,'catering.restaurant'),/上限/);assert.equal(calls.length,2);
  const failed=createClient({key:'key',fetch:async()=>({ok:false,status:403})});await assert.rejects(failed.details('id'),/Key/);
  const malformed=createClient({key:'key',fetch:async()=>({ok:true,json:async()=>({features:[]})})});await assert.rejects(malformed.details('id'),/格式/);
+});
+
+test('detail matching tolerates provider coordinate rounding but never joins neighboring or different OSM objects',()=>{
+ const feature=(id,type,osm,featureType='details')=>({properties:{place_id:id,feature_type:featureType,name:'同名店家',datasource:{sourcename:'openstreetmap',raw:{osm_type:type,osm_id:osm}}}});
+ const search=feature('search-rounded-coordinate-id','n',3923847450,'place');
+ const correct=feature('detail-rounded-coordinate-id','node',3923847450);
+ const neighbor=feature('other','n',3923847451),sameNumberDifferentType=feature('way-id','w',3923847450);
+ assert.equal(matchDetails(search,[neighbor,sameNumberDifferentType,correct]),correct);
+ assert.equal(matchDetails(search,[neighbor,sameNumberDifferentType]),undefined);
+ assert.equal(matchDetails({properties:{name:'同名店家'}},[correct]),undefined);
+ assert.equal(matchDetails(search,[feature('x','n',3923847450,'building')]),undefined);
+ assert.equal(matchDetails(search,[feature('search-rounded-coordinate-id','n',3923847450)]).properties.place_id,'search-rounded-coordinate-id');
 });
